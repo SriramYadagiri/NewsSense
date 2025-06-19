@@ -6,6 +6,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+    {% if error %}
+        <div class="error-message">{{ error }}</div>
+    {% endif %}
+    
     <div class="container">
         <h1>NewsSense</h1>
         <p>Enter an article, URL, or upload a file to detect bias and get an unbiased version.</p>
@@ -19,7 +23,7 @@
 
             <div class="input-group">
                 <label>Or upload a file (.txt or .pdf):</label>
-                <input type="file" accept=".pdf .txt .docx .doc" name="article_file">
+                <input type="file" accept=".pdf, .txt, .docx" name="article_file">
             </div>
 
             <button type="submit">Analyze</button>
