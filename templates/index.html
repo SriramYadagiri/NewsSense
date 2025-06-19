@@ -2,29 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Animal Chat</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='index.css') }}">
+    <title>NewsSense - Detect News Bias</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div id="container">
-        <h1>AI Animal Chat</h1>
-        <!-- Webcam and image recognition elements -->
-        <div id="webcam-container"></div>
-        <div id="label-container"></div>
-        <button onclick="init()">Start Webcam</button>
+    <div class="container">
+        <h1>NewsSense</h1>
+        <p>Enter an article, URL, or upload a file to detect bias and get an unbiased version.</p>
 
-        <!-- Chat interface -->
-        <div id="chat-container"></div>
-        <div id="input-container">
-            <input type="text" id="user-input" placeholder="Type your message...">
-            <button onclick="sendMessage()">Send</button>
-        </div>
+        <form action="/analyze" method="POST" enctype="multipart/form-data">
+            <textarea name="article_text" placeholder="Paste your article text here..."></textarea>
+            
+            <div class="input-group">
+                <input type="text" name="article_url" placeholder="Or paste article URL">
+            </div>
+
+            <div class="input-group">
+                <label>Or upload a file (.txt or .pdf):</label>
+                <input type="file" accept=".pdf .txt .docx .doc" name="article_file">
+            </div>
+
+            <button type="submit">Analyze</button>
+        </form>
     </div>
-
-    <!-- Required scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

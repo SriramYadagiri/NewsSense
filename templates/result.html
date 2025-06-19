@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NewsSense Results</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Bias Analysis Results</h1>
+
+        <h3>Ideological Lean: <span class="lean">{{ lean }}</span></h3>
+
+        <div class="section">
+            <h3>Original Text with Highlighted Bias:</h3>
+            <p>{{ highlighted_text | safe }}</p>
+        </div>
+
+        <div class="section">
+            <h3>Unbiased Version:</h3>
+            <p>{{ unbiased_text }}</p>
+        </div>
+
+        <a href="/" class="back-button">← Analyze Another</a>
+    </div>
+</body>
+</html>
