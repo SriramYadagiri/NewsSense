@@ -33,6 +33,7 @@ def scrape_with_requests(url):
     except Exception as e:
         print("Requests scraping failed:", e)
         return ""
+<<<<<<< HEAD
     
 def summarize_article(text):
     prompt = f"Summarize the following article in 5–6 concise sentences:\n\n{text}"
@@ -48,6 +49,8 @@ def summarize_article(text):
     )
 
     return response.choices[0].message.content.strip()
+=======
+>>>>>>> ee1814def960fc38907020196dc63e6c65065d42
 
 # --- Routes ---
 
@@ -100,10 +103,14 @@ def analyze():
 
     lean = "lean_label"  # Replace with bias detection model output
 
+<<<<<<< HEAD
     summary = summarize_article(raw_text)
 
     return render_template('result.html',
                            summary=summary,
+=======
+    return render_template('result.html',
+>>>>>>> ee1814def960fc38907020196dc63e6c65065d42
                            highlighted_text=format_text_into_paragraphs(highlighted_text),
                            unbiased_text=format_text_into_paragraphs(unbiased_text),
                            lean=lean)
