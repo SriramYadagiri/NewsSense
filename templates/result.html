@@ -12,13 +12,18 @@
         <h3>Ideological Lean: <span class="lean">{{ lean }}</span></h3>
 
         <div class="section">
+            <h3>Short Summary of Text:</h3>
+            <p>{{ summary }}</p>
+        </div>
+        
+        <div class="section">
             <h3>Original Text with Highlighted Bias:</h3>
             <p>{{ highlighted_text | safe }}</p>
         </div>
 
         <div class="section">
             <h3>Unbiased Version:</h3>
-            <p>{{ unbiased_text }}</p>
+            <p>{{ unbiased_text | safe}}</p>
         </div>
 
         <a href="/" class="back-button">← Analyze Another</a>
