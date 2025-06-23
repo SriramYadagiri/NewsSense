@@ -1,0 +1,81 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* ✅ Container card */
+.container {
+    background-color: #fff;
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+}
+
+/* ✅ Header */
+h1 {
+    font-size: 32px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+/* ✅ Paragraph */
+p {
+    color: #666;
+    margin-bottom: 20px;
+}
+
+/* ✅ Form element spacing */
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #444;
+    margin-top: 12px; /* ✅ Adds breathing space above the label */
+}
+
+/* ✅ Input fields and textarea */
+textarea, input[type="text"], input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    resize: vertical;
+}
+
+input[type="file"] {
+    margin-bottom: 16px; /* Adds spacing below file input */
+}
+
+/* ✅ Submit button styling */
+input[type="submit"], button {
+    background-color: #007BFF;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+input[type="submit"]:hover,
+button:hover {
+    background-color: #0056b3;
+}
+
+/* ✅ Error message styling */
+.error-message {
+    color: red;
+    margin-bottom: 15px;
+}
