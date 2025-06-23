@@ -12,8 +12,12 @@
 </head>
 <body>
     {% if error %}
-        <div class="error-message">{{ error }}</div>
+        <div class="error-message" id="errorBox">
+            <span class="close-btn" onclick="document.getElementById('errorBox').style.display='none';">&times;</span>
+            <span style="margin: 2px">{{ error }}</span>
+        </div>
     {% endif %}
+
 
     <!-- ✅ Centered and styled container -->
     <div class="container">
