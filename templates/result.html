@@ -8,25 +8,49 @@
 <body>
     <div class="container">
         <h1>Bias Analysis Results</h1>
-
         <h3>Ideological Lean: <span class="lean">{{ lean }}</span></h3>
 
-        <div class="section">
-            <h3>Short Summary of Text:</h3>
-            <p>{{ summary }}</p>
-        </div>
-        
-        <div class="section">
-            <h3>Original Text with Highlighted Bias:</h3>
-            <p>{{ highlighted_text | safe }}</p>
+        <div class="toggle-section">
+            <div class="toggle-header" onclick="toggleSection(this)">
+                <span>Short Summary of Text</span>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="section-content">
+                <p>{{ summary }}</p>
+            </div>
         </div>
 
-        <div class="section">
-            <h3>Unbiased Version:</h3>
-            <p>{{ unbiased_text | safe}}</p>
+        <div class="toggle-section">
+            <div class="toggle-header" onclick="toggleSection(this)">
+                <span>Original Text with Highlighted Bias</span>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="section-content">
+                <p>{{ highlighted_text | safe }}</p>
+            </div>
+        </div>
+
+        <div class="toggle-section">
+            <div class="toggle-header" onclick="toggleSection(this)">
+                <span>Unbiased Version</span>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="section-content">
+                <p>{{ unbiased_text | safe }}</p>
+            </div>
         </div>
 
         <a href="/" class="back-button">← Analyze Another</a>
     </div>
+
+    <script>
+        function toggleSection(header) {
+            const icon = header.querySelector('.toggle-icon');
+            const content = header.nextElementSibling;
+
+            content.classList.toggle('open');
+            icon.classList.toggle('open');
+        }
+    </script>
 </body>
 </html>

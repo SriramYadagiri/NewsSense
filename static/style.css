@@ -7,6 +7,7 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
+    flex-direction: column;
 }
 
 /* ✅ Container card */
@@ -76,6 +77,73 @@ button:hover {
 
 /* ✅ Error message styling */
 .error-message {
-    color: red;
-    margin-bottom: 15px;
+    color: white;
+    background-color: #e74c3c;
+    padding: 1rem;
+    text-align: center;
+    border-radius: 8px;
+    max-width: 600px;
+    margin: 1rem auto;
+}
+
+.toggle-section {
+    margin: 1.5rem 0;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: #fafafa;
+}
+
+.toggle-header {
+    padding: 1rem 1.25rem;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-header:hover {
+    background-color: #e6e6e6;
+}
+
+.toggle-icon {
+    transition: transform 0.3s ease;
+}
+
+.toggle-icon.open {
+    transform: rotate(90deg);
+}
+
+.section-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+    padding: 0 1.25rem;
+}
+
+.section-content.open {
+    padding: 1rem 1.25rem;
+    max-height: 200px;
+    overflow: scroll;
+    overflow-x: hidden;
+}
+
+.back-button {
+    display: block;
+    margin: 2rem auto 0;
+    text-align: center;
+    background: #007bff;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    width: fit-content;
+}
+
+.back-button:hover {
+    background: #0056b3;
 }
