@@ -49,6 +49,51 @@ def summarize_article(text):
 
     return response.choices[0].message.content.strip()
 
+def identify_lean(text):
+    prompt = f"Based on the article's text alone without inferring from its source, identify where the article leans ideologically in 1 or 2 words (left, right, center, etc),:\n\n{text}"
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that summarizes news and articles."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.5,
+        max_tokens=300
+    )
+
+    return response.choices[0].message.content.strip()
+
+def highlight_bias(text):
+    prompt = f"Retype word for word the article's text and highlight places where ideological bias is present:\n\n{text}"
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that summarizes news and articles."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.5,
+        max_tokens=300
+    )
+
+    return response.choices[0].message.content.strip()
+
+def unbias(text):
+    prompt = f"Retype the article in an unbiased fashion:\n\n{text}"
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that summarizes news and articles."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.5,
+        max_tokens=300
+    )
+
+    return response.choices[0].message.content.strip()
+
 # --- Routes ---
 
 @app.route('/')
@@ -94,11 +139,11 @@ def analyze():
     else:
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
 
-    highlighted_text = raw_text # Replace with bias detection model output
+    highlighted_text = highlight_bias(raw_text)
 
-    unbiased_text = raw_text  # Replace with unbiased rewrite
+    unbiased_text = unbias(raw_text)  
 
-    lean = "lean_label"  # Replace with bias detection model output
+    lean = identify_lean(raw_text)
 
     summary = summarize_article(raw_text)
 
