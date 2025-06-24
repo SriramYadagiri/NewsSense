@@ -19,6 +19,7 @@ body {
     width: 100%;
     max-width: 600px;
     text-align: center;
+    overflow: scroll;
 }
 
 /* ✅ Header */
@@ -162,4 +163,34 @@ button:hover {
 
 .back-button:hover {
     background: #0056b3;
+}
+
+.highlighted-article {
+    background-color: #fafafa;
+    padding: 1rem;
+    border-radius: 10px;
+    line-height: 1.7;
+    font-family: "Segoe UI", sans-serif;
+}
+
+.highlight-section {
+    margin: 1rem 0;
+    padding: 0.5rem;
+    border-left: 4px solid #e74c3c;
+    background-color: #fff4f4;
+    border-radius: 6px;
+}
+
+.highlight {
+    font-weight: bold;
+    background-color: #ffe0e0;
+    padding: 0.2rem 0.4rem;
+    display: inline-block;
+}
+
+.bias-reasoning {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: #a00;
+    margin-bottom: 0.25rem;
 }

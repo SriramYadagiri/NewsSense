@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import re
 from dotenv import load_dotenv
@@ -19,7 +20,14 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/
 
 def format_text_into_paragraphs(text):
     paragraphs = re.split(r'\n\s*\n', text.strip())
-    return ''.join(f'<p>{p.strip()}</p>' for p in paragraphs if p.strip())
+    formatted = []
+    for p in paragraphs:
+        if '<div class="highlight-section">' in p:
+            formatted.append(p)
+        else:
+            formatted.append(f"<p>{p.strip()}</p>")
+    return "<br>".join(formatted)
+
 
 def scrape_with_requests(url):
     headers = {"User-Agent": USER_AGENT}
@@ -28,26 +36,81 @@ def scrape_with_requests(url):
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
         paragraphs = soup.find_all('p')
-        text = '\n\n'.join(p.get_text() for p in paragraphs if p.get_text(strip=True))
+        text = ''.join(p.get_text() for p in paragraphs if p.get_text(strip=True))
         return text
     except Exception as e:
         print("Requests scraping failed:", e)
         return ""
 
 def summarize_article(text):
-    prompt = f"Summarize the following article in 5–6 concise sentences:\n\n{text}"
+    text_file_path = 'prompts/summary_message.txt'
+    with open(text_file_path, 'r') as file:
+            initial_prompt = file.read()
 
     response = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant that summarizes news and articles."},
-            {"role": "user", "content": prompt}
+            {"role": "system", "content": initial_prompt},
+            {"role": "user", "content": "Summarize and clean the following article for readability:\n\n" + text}
         ],
-        temperature=0.5,
-        max_tokens=300
+        temperature=0.3,
+        max_tokens=1500
     )
 
-    return response.choices[0].message.content.strip()
+    output = response.choices[0].message.content.strip()
+    return json.loads(output)
+
+def determine_bias(text):
+    text_file_path = 'prompts/bias_message.txt'
+    with open(text_file_path, 'r') as file:
+            initial_prompt = file.read()
+
+    user_message = f"Analyze the following text for bias and provide a bias score:\n\n{text}"
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages = [
+            {"role": "system", "content": initial_prompt},
+            {"role": "user", "content": user_message}
+        ],
+        temperature=0.3,
+        max_tokens=1000
+    )
+
+    output = response.choices[0].message.content.strip()
+    return json.loads(output)
+
+def highlight_bias(text, highlighted_passages):
+    for obj in highlighted_passages:
+        passage = obj["passage"].strip()
+        reasoning = obj["reasoning"].strip()
+
+        if passage in text:
+            replacement = (
+                f'<div class="highlight-section">'
+                f'<span class="highlight">{passage}<br><span class="bias-reasoning">{reasoning}</span></span>'
+                f'</div>'
+            )
+            text = text.replace(passage, replacement, 1)  # Replace only once
+    return text
+
+def unbias(text, highlighted_passages):
+    text_file_path = 'prompts/unbias_message.txt'
+    with open(text_file_path, 'r') as file:
+        initial_prompt = file.read()
+    
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": initial_prompt},
+            {"role": "user", "content": f"Biased Phrases: {highlighted_passages}\n\nArticle:\n{text}"}
+        ],
+        temperature=0.5,
+        max_tokens=1500
+    )
+    
+    output = response.choices[0].message.content.strip()
+    return output
 
 def identify_lean(text):
     prompt = f"Based on the article's text alone without inferring from its source, identify where the article leans ideologically in 1 or 2 words (left, right, center, etc),:\n\n{text}"
@@ -139,13 +202,16 @@ def analyze():
     else:
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
 
-    highlighted_text = highlight_bias(raw_text)
+    new_article = summarize_article(raw_text)
+    raw_text = new_article["text"]
+    bias = determine_bias(raw_text)
+    highlighted_text = highlight_bias(raw_text, bias["highlighted_passages"])
 
-    unbiased_text = unbias(raw_text)  
+    unbiased_text = unbias(raw_text, bias["highlighted_passages"])
 
-    lean = identify_lean(raw_text)
+    lean = bias["bias_label"]  # Replace with bias detection model output
 
-    summary = summarize_article(raw_text)
+    summary = new_article["summary"]
 
     return render_template('result.html',
                            summary=summary,
