@@ -112,51 +112,6 @@ def unbias(text, highlighted_passages):
     output = response.choices[0].message.content.strip()
     return output
 
-def identify_lean(text):
-    prompt = f"Based on the article's text alone without inferring from its source, identify where the article leans ideologically in 1 or 2 words (left, right, center, etc),:\n\n{text}"
-
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant that summarizes news and articles."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.5,
-        max_tokens=300
-    )
-
-    return response.choices[0].message.content.strip()
-
-def highlight_bias(text):
-    prompt = f"Retype word for word the article's text and highlight places where ideological bias is present:\n\n{text}"
-
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant that summarizes news and articles."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.5,
-        max_tokens=300
-    )
-
-    return response.choices[0].message.content.strip()
-
-def unbias(text):
-    prompt = f"Retype the article in an unbiased fashion:\n\n{text}"
-
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant that summarizes news and articles."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.5,
-        max_tokens=300
-    )
-
-    return response.choices[0].message.content.strip()
-
 # --- Routes ---
 
 @app.route('/')
