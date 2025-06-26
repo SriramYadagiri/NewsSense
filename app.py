@@ -7,6 +7,8 @@ from flask import Flask, request, render_template
 import requests
 from openai import OpenAI
 from bs4 import BeautifulSoup
+from newspaper import Article
+import concurrent.futures
 
 import PyPDF2
 from docx import Document
@@ -29,17 +31,26 @@ def format_text_into_paragraphs(text):
     return "<br>".join(formatted)
 
 
-def scrape_with_requests(url):
-    headers = {"User-Agent": USER_AGENT}
+def scrape_with_newspaper_or_fallback(url):
     try:
+        article = Article(url)
+        article.download()
+        article.parse()
+        if article.text.strip():
+            return article.text
+    except Exception as e:
+        print("Newspaper3k failed:", e)
+
+    # fallback to BeautifulSoup
+    try:
+        headers = {"User-Agent": USER_AGENT}
         resp = requests.get(url, headers=headers, timeout=10)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
         paragraphs = soup.find_all('p')
-        text = ''.join(p.get_text() for p in paragraphs if p.get_text(strip=True))
-        return text
+        return ''.join(p.get_text() for p in paragraphs if p.get_text(strip=True))
     except Exception as e:
-        print("Requests scraping failed:", e)
+        print("Requests + BS4 scraping failed:", e)
         return ""
 
 def summarize_article(text):
@@ -51,14 +62,14 @@ def summarize_article(text):
         model="gpt-4",
         messages=[
             {"role": "system", "content": initial_prompt},
-            {"role": "user", "content": "Summarize and clean the following article for readability:\n\n" + text}
+            {"role": "user", "content": "Summarize the following article:\n\n" + text}
         ],
         temperature=0.3,
-        max_tokens=1500
+        max_tokens=1000
     )
 
     output = response.choices[0].message.content.strip()
-    return json.loads(output)
+    return output
 
 def determine_bias(text):
     text_file_path = 'prompts/bias_message.txt'
@@ -74,10 +85,11 @@ def determine_bias(text):
             {"role": "user", "content": user_message}
         ],
         temperature=0.3,
-        max_tokens=1000
+        max_tokens=1500
     )
 
     output = response.choices[0].message.content.strip()
+    print("Bias Analysis: " + output)
     return json.loads(output)
 
 def highlight_bias(text, highlighted_passages):
@@ -129,7 +141,7 @@ def analyze():
         raw_text = pasted_text
 
     elif article_url:
-        raw_text = scrape_with_requests(article_url)
+        raw_text = scrape_with_newspaper_or_fallback(article_url)
         if not raw_text:
             return render_template("index.html", error="Failed to extract article from URL. Try pasting the article text directly or uploading a file.")
 
@@ -157,16 +169,19 @@ def analyze():
     else:
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
 
-    new_article = summarize_article(raw_text)
-    raw_text = new_article["text"]
-    bias = determine_bias(raw_text)
+    # Run summarization, bias detection, and unbiasing in parallel
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_summary = executor.submit(summarize_article, raw_text)
+        future_bias = executor.submit(determine_bias, raw_text)
+
+        summary = future_summary.result()
+        bias = future_bias.result()
+
+        future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
+        unbiased_text = future_unbias.result()
+
     highlighted_text = highlight_bias(raw_text, bias["highlighted_passages"])
-
-    unbiased_text = unbias(raw_text, bias["highlighted_passages"])
-
-    lean = bias["bias_label"]  # Replace with bias detection model output
-
-    summary = new_article["summary"]
+    lean = bias["bias_label"]
 
     return render_template('result.html',
                            summary=summary,

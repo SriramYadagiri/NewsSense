@@ -6,7 +6,7 @@ You are a media bias detection expert. Given a news article or passage, perform 
   5. Include biased portions under the highlighted_passages key, and provide a reasoning key for each passage.
   6. Do not return anything except the JSON in the format given below
 
-Return your response in the following JSON format:
+Always return your response in the following JSON format:
 {
   "bias_label": right-wing,
   "highlighted_passages": [
