@@ -2,50 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NewsSense - Detect News Bias</title>
-    
-    <!-- ✅ Add Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-
-    <!-- ✅ Link to your CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    {% if error %}
-        <div class="error-message" id="errorBox">
-            <span class="close-btn" onclick="document.getElementById('errorBox').style.display='none';">&times;</span>
-            <span style="margin: 2px">{{ error }}</span>
+
+    <!-- ✅ Header -->
+    <header class="main-header">
+        <a href="/" style="text-decoration: none; color: #333" class="logo"><span style="color:rgb(0, 123, 255)">News</span>Sense</a>
+        <nav class="nav-links">
+            <a href="/">Home</a>
+            <a href="#how-it-works">How It Works</a>
+            <a href="#about">About</a>
+        </nav>
+    </header>
+
+    <!-- ✅ Hero Section -->
+    <section class="hero">
+        {% if error %}
+            <div class="error-message" id="errorBox">
+                <span class="close-btn" onclick="document.getElementById('errorBox').style.display='none';">&times;</span>
+                <span>{{ error }}</span>
+            </div>
+        {% endif %}
+        <div class="hero-content">
+            <h1>Uncover Hidden Bias in News</h1>
+            <p>Paste a news article, upload a file, or enter a URL to detect bias and see an unbiased version powered by AI.</p>
+            <a href="#analyzer-form" class="cta-button">Try It Now ↓</a>
         </div>
-    {% endif %}
+    </section>
 
+    <!-- ✅ Analyzer Form Section -->
+    <section id="analyzer-form" class="form-section">
 
-    <!-- ✅ Centered and styled container -->
-    <div class="container">
-        <h1>NewsSense</h1>
-        <p>Enter an article, URL, or upload a file to detect bias and get an unbiased version.</p>
+        <div class="container form-container">
+            <h2>Analyze a News Article</h2>
+            <form action="/analyze" method="POST" id="analyze-form" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Paste your article text:</label>
+                    <textarea name="article_text" placeholder="Paste your article text here..."></textarea>
+                </div>
 
-        <!-- ✅ Start of form -->
-        <form action="/analyze" method="POST" enctype="multipart/form-data">
-            
-            <!-- ✅ Textarea input wrapped in form-group -->
-            <div class="form-group">
-                <textarea name="article_text" placeholder="Paste your article text here..."></textarea>
+                <div class="form-group">
+                    <label>Or enter a URL:</label>
+                    <input type="text" name="article_url" placeholder="Paste article URL">
+                </div>
+
+                <div class="form-group">
+                    <label>Or upload a file (.txt or .pdf):</label>
+                    <input type="file" accept=".pdf, .txt, .docx" name="article_file">
+                </div>
+
+                <input type="submit" value="Analyze">
+            </form>
+
+            <div id="loading-overlay">
+                <div class="spinner"></div>
+                <p>Analyzing article, please wait...</p>
             </div>
+        </div>
+    </section>
 
-            <!-- ✅ URL input wrapped in form-group -->
-            <div class="form-group">
-                <input type="text" name="article_url" placeholder="Or paste article URL">
-            </div>
+    <!-- ✅ How It Works -->
+    <section id="how-it-works" class="info-section">
+        <div class="container">
+            <h2>How It Works</h2>
+            <p>NewsSense uses advanced language models to scan articles for biased language, framing, and omission of context. It highlights these biases and provides a more neutral version of the article for better understanding.</p>
+        </div>
+    </section>
 
-            <!-- ✅ File input wrapped in form-group -->
-            <div class="form-group">
-                <label>Or upload a file (.txt or .pdf):</label>
-                <input type="file" accept=".pdf, .txt, .docx" name="article_file">
-            </div>
+    <!-- ✅ About Section -->
+    <section id="about" class="info-section">
+        <div class="container">
+            <h2>About NewsSense</h2>
+            <p>Created by students passionate about media literacy, NewsSense empowers users to question what they read and understand the subtle ways bias can shape perception.</p>
+        </div>
+    </section>
+    
+    <script>
+        const form = document.getElementById('analyze-form');
+        const overlay = document.getElementById('loading-overlay');
 
-            <!-- ✅ Submit button -->
-            <input type="submit" value="Analyze">
-        </form>
-    </div>
+        form.addEventListener('submit', () => {
+            overlay.style.display = 'block';
+        });
+    </script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+import html
 import io
 import json
 import os
@@ -28,7 +29,7 @@ def format_text_into_paragraphs(text):
             formatted.append(p)
         else:
             formatted.append(f"<p>{p.strip()}</p>")
-    return "<br>".join(formatted)
+    return "".join(formatted)
 
 
 def scrape_with_newspaper_or_fallback(url):
@@ -64,7 +65,8 @@ def summarize_article(text):
             {"role": "system", "content": initial_prompt},
             {"role": "user", "content": "Summarize the following article:\n\n" + text}
         ],
-        temperature=0.3,
+        temperature=0,
+        top_p=1,
         max_tokens=1000
     )
 
@@ -84,7 +86,8 @@ def determine_bias(text):
             {"role": "system", "content": initial_prompt},
             {"role": "user", "content": user_message}
         ],
-        temperature=0.3,
+        temperature=0,
+        top_p=1,
         max_tokens=1500
     )
 
@@ -97,14 +100,16 @@ def highlight_bias(text, highlighted_passages):
         passage = obj["passage"].strip()
         reasoning = obj["reasoning"].strip()
 
+        escaped_passage = html.escape(passage)
+        escaped_reasoning = html.escape(reasoning)
+
         if passage in text:
             replacement = (
-                f'<div class="highlight-section">'
-                f'<span class="highlight">{passage}<br><span class="bias-reasoning">{reasoning}</span></span>'
-                f'</div>'
+                f'<span class="highlight" data-reason="{escaped_reasoning}">{escaped_passage}</span>'
             )
-            text = text.replace(passage, replacement, 1)  # Replace only once
+            text = text.replace(passage, replacement, 1)
     return text
+
 
 def unbias(text, highlighted_passages):
     text_file_path = 'prompts/unbias_message.txt'
@@ -117,7 +122,8 @@ def unbias(text, highlighted_passages):
             {"role": "system", "content": initial_prompt},
             {"role": "user", "content": f"Biased Phrases: {highlighted_passages}\n\nArticle:\n{text}"}
         ],
-        temperature=0.5,
+        temperature=0,
+        top_p=1,
         max_tokens=1500
     )
     
@@ -181,13 +187,16 @@ def analyze():
         unbiased_text = future_unbias.result()
 
     highlighted_text = highlight_bias(raw_text, bias["highlighted_passages"])
-    lean = bias["bias_label"]
+    score = bias["bias_score"]
+    rubric = bias["rubric_justification"]
 
     return render_template('result.html',
                            summary=summary,
+                           original_text=format_text_into_paragraphs(raw_text),
                            highlighted_text=format_text_into_paragraphs(highlighted_text),
                            unbiased_text=format_text_into_paragraphs(unbiased_text),
-                           lean=lean)
+                           score=score,
+                           rubric=rubric,)
 
 
 if __name__ == '__main__':

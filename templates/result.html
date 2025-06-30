@@ -2,54 +2,92 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NewsSense Results</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Bias Analysis Results</h1>
-        <h3>Ideological Lean: <span class="lean">{{ lean }}</span></h3>
+    <header class="main-header">
+        <a href="/" style="text-decoration: none; color: #333" class="logo"><span style="color:rgb(0, 123, 255)">News</span>Sense</a>
+        <nav class="nav-links">
+            <a href="/">Home</a>
+            <a href="#summary">Summary</a>
+            <a href="#document-viewer">Document</a>
+        </nav>
+    </header>
 
-        <div class="toggle-section">
-            <div class="toggle-header" onclick="toggleSection(this)">
-                <span>Short Summary of Text</span>
-                <span class="toggle-icon">▶</span>
+    <section class="results-section">
+        <div class="container result-card">
+            <h1>Bias Analysis Results</h1>
+
+            <div class="result-score-container">
+                <div class="score-box">
+                    <button class="rubric-toggle" onclick="toggleRubric()">
+                        <img src="{{ url_for('static', filename='images/rubric.svg') }}" alt="Rubric" />
+                    </button>
+                    <span class="score-label">Bias Score:  </span>
+                    <span class="score-value">{{ score }}</span>
+                </div>
+                <div class="rubric-popup" id="rubricPopup">
+                    <ul>
+                        <li><strong>Language Bias:</strong> {{ rubric.language_bias }}</li>
+                        <li><strong>Framing Bias:</strong> {{ rubric.framing_bias }}</li>
+                        <li><strong>Sourcing Bias:</strong> {{ rubric.sourcing_bias }}</li>
+                    </ul>
+                    <p><strong>Overall Reasoning:</strong> {{ rubric.overall_reasoning }}</p>
+                </div>
             </div>
-            <div class="section-content">
+
+
+            <!-- Summary -->
+            <div class="summary-box" id="summary">
+                <h2>Summary</h2>
                 <p>{{ summary }}</p>
             </div>
-        </div>
 
-        <div class="toggle-section">
-            <div class="toggle-header" onclick="toggleSection(this)">
-                <span>Bias Present in Text</span>
-                <span class="toggle-icon">▶</span>
+            <!-- Document Viewer -->
+            <div class="doc-viewer" id="document-viewer">
+                <div class="doc-toggle-buttons">
+                    <button onclick="showView('original')" class="active">Original</button>
+                    <button onclick="showView('highlighted')">Highlighted Bias</button>
+                    <button onclick="showView('unbiased')">Unbiased</button>
+                </div>
+                <div class="doc-content" id="doc-original">{{ original_text | safe }}</div>
+                <div class="doc-content" id="doc-highlighted" style="display:none">{{ highlighted_text | safe }}</div>
+                <div class="doc-content" id="doc-unbiased" style="display:none">{{ unbiased_text | safe }}</div>
             </div>
-            <div class="section-content">
-                <p>{{ highlighted_text | safe }}</p>
-            </div>
-        </div>
 
-        <div class="toggle-section">
-            <div class="toggle-header" onclick="toggleSection(this)">
-                <span>Unbiased Version</span>
-                <span class="toggle-icon">▶</span>
-            </div>
-            <div class="section-content">
-                <p>{{ unbiased_text | safe }}</p>
-            </div>
+            <a href="/" class="back-button">← Analyze Another</a>
         </div>
-
-        <a href="/" class="back-button">← Analyze Another</a>
-    </div>
+    </section>
 
     <script>
-        function toggleSection(header) {
-            const icon = header.querySelector('.toggle-icon');
-            const content = header.nextElementSibling;
+        function toggleRubric() {
+            const popup = document.getElementById("rubricPopup");
+            popup.classList.toggle("open");
+        }
 
-            content.classList.toggle('open');
-            icon.classList.toggle('open');
+        // Assuming all your toggle buttons have a common class or are inside .doc-toggle-buttons container
+        const buttons = document.querySelectorAll('.doc-toggle-buttons button');
+
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove 'active' class from all buttons
+                buttons.forEach(btn => btn.classList.remove('active'));
+                // Add 'active' class to the clicked button
+                button.classList.add('active');
+
+                // Your existing logic to toggle views here, e.g.
+                // showDocView(button.dataset.view);
+            });
+        });
+
+        function showView(view) {
+            const views = ['original', 'highlighted', 'unbiased'];
+            views.forEach(id => {
+                document.getElementById(`doc-${id}`).style.display = (id === view) ? 'block' : 'none';
+            });
         }
     </script>
 </body>
