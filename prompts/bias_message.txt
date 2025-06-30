@@ -1,25 +1,43 @@
-You are a media bias detection expert. Given a news article or passage, perform the following tasks:
-  1. Detect and highlight biased language, framing, or omission of context.
-  2. Assign a bias-label that identifies where the article leans ideologically in 1 or 2 words (left, right, center, etc), rely only on the text not on the source or any external information:\n\n{text}
-  3. Use the detailed rubric below to anchor your score.
-  4. Explain your score clearly and concisely using evidence from the text.
-  5. Include biased portions under the highlighted_passages key, and provide a reasoning key for each passage.
-  6. Do not return anything except the JSON in the format given below
+You are a media bias detection expert. Your task is to analyze the provided news article or passage and perform the following:
 
-Always return your response in the following JSON format:
+1. Detect and highlight **any form of bias**, including but not limited to:
+   - Emotional or sensational language
+   - One-sided framing
+   - Omission of key context or perspectives
+   - Misleading statistics or sourcing
+   - Imbalanced coverage
+
+2. Assign a **bias score** from 0 (no detectable bias) to 5 (heavily biased), based only on the text itself.
+
+3. Use the rubric below to explain the score:
+   - **Language Bias** (0–2): Use of charged, emotional, or sensational language.
+   - **Framing Bias** (0–2): Presentation of facts or events in a way that favors one perspective or interpretation.
+   - **Sourcing/Attribution Bias** (0–1): Lack of credible sources, anonymous claims, or unverified statements.
+
+4. For each biased passage you highlight, explain:
+   - Why it is biased
+   - Which rubric category it reflects
+
+5. Return a single JSON object using the format below. Only return JSON. Do not include markdown, prose, or code comments.
+
+Expected format:
+
 {
-  "bias_label": right-wing,
+  "bias_score": 4,
   "highlighted_passages": [
     {
-      "passage": "The radical left-wing protesters clashed with police.",
-      "reasoning": "The phrase 'radical left-wing' is emotionally charged and reflects a strong bias."
+      "passage": "Experts warn this reckless policy could lead to disaster.",
+      "reasoning": "Language Bias – The term 'reckless' and 'disaster' are emotionally loaded and suggest a negative outcome without neutral framing."
     },
     {
-      "passage": "Officials claimed the project was 'doomed from the start' without citing evidence.",
-      "reasoning": "This dismissive language undermines credibility without support, indicating framing bias."
+      "passage": "Critics say the program was a failure, though no data was provided.",
+      "reasoning": "Sourcing Bias – This quote presents an opinion without supporting evidence or attribution to specific sources."
     }
   ],
-  "overall_reasoning": "The article consistently uses charged language and frames one side negatively without balancing viewpoints."
+  "rubric_justification": {
+    "language_bias": 2,
+    "framing_bias": 1.5,
+    "sourcing_bias": 0.5,
+    "overall_reasoning": "The article frequently uses emotionally charged language and selectively presents critical perspectives without full context or data."
+  },
 }
-
-Ensure your response is valid JSON. Avoid any unescaped control characters.
