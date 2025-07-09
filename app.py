@@ -95,6 +95,28 @@ def determine_bias(text):
     print("Bias Analysis: " + output)
     return json.loads(output)
 
+def find_misinformation(text):
+    text_file_path = 'prompts/misinformation_message.txt'
+    with open(text_file_path, 'r') as file:
+        initial_prompt = file.read()
+
+    user_message = f"Analyze the following text for misinformation and return a list of passages flagged for misinformation:\n\n{text}"
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": initial_prompt},
+            {"role": "user", "content": user_message}
+        ],
+        temperature=0,
+        top_p=1,
+        max_tokens=1500
+    )
+
+    output = response.choices[0].message.content.strip()
+    print("Misinformation Analysis: " + output)
+    return json.loads(output) 
+
 def highlight_bias(text, highlighted_passages):
     for obj in highlighted_passages:
         passage = obj["passage"].strip()
