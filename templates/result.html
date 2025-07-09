@@ -54,6 +54,10 @@
                     <button onclick="showView('unbiased')">Unbiased</button>
                 </div>
                 <div class="doc-content" id="doc-original">{{ original_text | safe }}</div>
+                <div class="info-banner" id="hoverInfoBanner">
+                    You can hover over the highlighted text to see why it's biased
+                    <button class="close-banner" onclick="closeInfoBanner()">&#10006;</button>
+                </div>
                 <div class="doc-content" id="doc-highlighted" style="display:none">{{ highlighted_text | safe }}</div>
                 <div class="doc-content" id="doc-unbiased" style="display:none">{{ unbiased_text | safe }}</div>
             </div>
@@ -88,6 +92,11 @@
             views.forEach(id => {
                 document.getElementById(`doc-${id}`).style.display = (id === view) ? 'block' : 'none';
             });
+        }
+
+        function closeInfoBanner() {
+            const banner = document.getElementById("hoverInfoBanner");
+            banner.style.display = "none";
         }
     </script>
 </body>

@@ -7,6 +7,8 @@ Your task is to analyze an article and identify any passages that contain potent
 - Include vague attributions (e.g., "experts say", "it is believed")
 - Misrepresent current events, science, or history
 
+Only select passages that you believe might be misinformation, you do not have to find any misinformation in the article.
+
 Return only passages that seem questionable or unverifiable — do not list opinions or editorial content unless presented as fact.
 
 ### Format your response as a JSON object with the following structure:

@@ -145,6 +145,10 @@ input[type="submit"]:hover {
     cursor: pointer;
 }
 
+.close-btn:hover {
+    color: #dbd1d1;
+}
+
 /* ========== Info Section ========== */
 .info-section {
     padding: 3rem 1rem;
@@ -296,6 +300,10 @@ input[type="submit"]:hover {
     color: white;
 }
 
+div {
+    scroll-margin-top: 80px;
+}
+
 .doc-content {
     background-color: #fff;
     border: 1px solid #ddd;
@@ -305,6 +313,9 @@ input[type="submit"]:hover {
     font-size: 1rem;
     white-space: pre-wrap;
     min-height: 200px;
+    max-height: 600px;
+    overflow: scroll;
+    overflow-x: hidden;
 }
 
 /* ========== Back Button ========== */
@@ -388,6 +399,33 @@ input[type="submit"]:hover {
     font-family: sans-serif;
     font-size: 1.2rem;
     color: #333;
+}
+
+.info-banner {
+    background-color: #e9f4ff;
+    border-left: 4px solid #007bff;
+    padding: 10px 14px;
+    margin-top: 16px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #333;
+    position: relative;
+    border-radius: 4px;
+}
+
+.close-banner {
+    position: absolute;
+    right: 4px;
+    top: 8px;
+    background: none;
+    border: none;
+    font-size: 12px;
+    line-height: 1;
+    color: #555;
+    cursor: pointer;
+}
+.close-banner:hover {
+    color: #000;
 }
 
 .spinner {
