@@ -34,6 +34,31 @@
         </div>
     </section>
 
+<div class="headline-scroller-wrapper">
+  <div class="headline-scroller">
+    {% for article in trusted_articles %}
+      <div class="headline-card">
+        <img src="{{ article.image }}" alt="news" />
+        <div class="headline-content">
+          <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+          <p class="source">{{ article.source }}</p>
+        </div>
+      </div>
+    {% endfor %}
+    {% for article in trusted_articles %}
+      <div class="headline-card">
+        <img src="{{ article.image }}" alt="news" />
+        <div class="headline-content">
+          <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+          <p class="source">{{ article.source }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+
+
     <!-- ✅ Analyzer Form Section -->
     <section id="analyzer-form" class="form-section">
 
