@@ -10,27 +10,55 @@ from openai import OpenAI
 from bs4 import BeautifulSoup
 from newspaper import Article
 import concurrent.futures
+from agents.misinfo_agent import agent
 
 import PyPDF2
 from docx import Document
 
-load_dotenv()
+load_dotenv(override=True)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+print(os.getenv("OPENAI_API_KEY"))
 
 app = Flask(__name__)
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
 
-def format_text_into_paragraphs(text):
-    paragraphs = re.split(r'\n\s*\n', text.strip())
-    formatted = []
-    for p in paragraphs:
-        if '<div class="highlight-section">' in p:
-            formatted.append(p)
-        else:
-            formatted.append(f"<p>{p.strip()}</p>")
-    return "".join(formatted)
+def get_trusted_headlines():
+    api_key = os.getenv("NEWS_API_KEY")
+    base_url = "https://newsdata.io/api/1/latest"
 
+    trusted_sources = "bbc.com,reuters.com,apnews.com,forbes.com,wsj.com"
+
+    params = {
+        "domainurl": trusted_sources,
+        "language": "en",
+        "country": "us",
+        "category": "politics,world,domestic,business,top",
+        "size": 8,
+        "apikey": api_key
+    }
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        articles = data.get("results", [])
+
+        return [
+            {
+                "title": article["title"],
+                "source": article["source_name"],
+                "url": article["link"],
+                "image": article["image_url"]
+            }
+            for article in articles if article["image_url"]
+        ]
+
+    except requests.exceptions.RequestException as e:
+        print("NewsAPI Request Error:", e)
+        return []
 
 def scrape_with_newspaper_or_fallback(url):
     try:
@@ -95,43 +123,63 @@ def determine_bias(text):
     print("Bias Analysis: " + output)
     return json.loads(output)
 
-def find_misinformation(text):
-    text_file_path = 'prompts/misinformation_message.txt'
-    with open(text_file_path, 'r') as file:
-        initial_prompt = file.read()
+def verify_claims_with_agent(text):
+    try:
+        response = agent.run(f"Verify factual claims in this article:\n\n{text}")
+        print(response.content)
+        result = response.content
+        return json.loads(result)
+    except Exception as e:
+        print("Agent verification error:", e)
+        return []
 
-    user_message = f"Analyze the following text for misinformation and return a list of passages flagged for misinformation:\n\n{text}"
+def apply_combined_highlights(text, bias_passages, misinfo_claims):
+    spans = []
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": initial_prompt},
-            {"role": "user", "content": user_message}
-        ],
-        temperature=0,
-        top_p=1,
-        max_tokens=1500
-    )
-
-    output = response.choices[0].message.content.strip()
-    print("Misinformation Analysis: " + output)
-    return json.loads(output) 
-
-def highlight_bias(text, highlighted_passages):
-    for obj in highlighted_passages:
-        passage = obj["passage"].strip()
-        reasoning = obj["reasoning"].strip()
-
-        escaped_passage = html.escape(passage)
-        escaped_reasoning = html.escape(reasoning)
-
+    # Collect bias highlights
+    for b in bias_passages:
+        passage = b["passage"].strip()
         if passage in text:
-            replacement = (
-                f'<span class="highlight" data-reason="{escaped_reasoning}">{escaped_passage}</span>'
-            )
-            text = text.replace(passage, replacement, 1)
-    return text
+            spans.append({
+                "type": "bias",
+                "passage": passage,
+                "reason": b["reasoning"].strip()
+            })
 
+    # Collect misinformation highlights
+    for m in misinfo_claims:
+        claim = m["claim"].strip()
+        if claim in text:
+            spans.append({
+                "type": "misinfo",
+                "passage": claim,
+                "reason": f"{m['verdict']}: {m['justification']}"
+            })
+
+    # Avoid overlapping inserts: sort by first occurrence index
+    def start_index(span):
+        return text.find(span["passage"])
+
+    spans = sorted(spans, key=start_index)
+
+    # Track modified positions to avoid re-highlighting same passage
+    modified = set()
+    for span in spans:
+        passage = span["passage"]
+        if passage in modified:
+            continue  # Already replaced
+        reason = html.escape(span["reason"])
+        escaped_passage = html.escape(passage)
+
+        if span["type"] == "bias":
+            tag = f'<span class="highlight bias" data-reason="{reason}">{escaped_passage}</span>'
+        else:
+            tag = f'<span class="highlight misinfo" data-reason="{reason}">{escaped_passage}</span>'
+
+        text = text.replace(passage, tag, 1)
+        modified.add(passage)
+
+    return text
 
 def unbias(text, highlighted_passages):
     text_file_path = 'prompts/unbias_message.txt'
@@ -156,7 +204,9 @@ def unbias(text, highlighted_passages):
 
 @app.route('/')
 def home():
-    return render_template('index.html')
+    headlines = get_trusted_headlines()
+    print(headlines)
+    return render_template('index.html', trusted_articles=headlines)
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
@@ -197,6 +247,9 @@ def analyze():
     else:
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
 
+    # print(verify_claims_with_agent(raw_text))
+    # return render_template('index.html', error="Just testing out misinfo agent")
+
     # Run summarization, bias detection, and unbiasing in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_summary = executor.submit(summarize_article, raw_text)
@@ -205,18 +258,24 @@ def analyze():
         summary = future_summary.result()
         bias = future_bias.result()
 
+        future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
+        misinfo_verdicts = future_misinfo.result()
+
         future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
         unbiased_text = future_unbias.result()
 
-    highlighted_text = highlight_bias(raw_text, bias["highlighted_passages"])
+    highlighted_text = apply_combined_highlights(
+        raw_text, bias["highlighted_passages"], misinfo_verdicts
+    )
+
     score = bias["bias_score"]
     rubric = bias["rubric_justification"]
 
     return render_template('result.html',
                            summary=summary,
-                           original_text=format_text_into_paragraphs(raw_text),
-                           highlighted_text=format_text_into_paragraphs(highlighted_text),
-                           unbiased_text=format_text_into_paragraphs(unbiased_text),
+                           original_text=raw_text,
+                           highlighted_text=highlighted_text,
+                           unbiased_text=unbiased_text,
                            score=score,
                            rubric=rubric,)
 

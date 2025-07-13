@@ -350,14 +350,24 @@ div {
 }
 
 .highlight {
-    background-color: #ff7d66;
     cursor: pointer;
     position: relative;
     transition: background-color 0.3s ease;
 }
 
-.highlight:hover {
+.highlight.misinfo {
+    background-color: #ff7d66;
+}
+.highlight.misinfo:hover {
     background-color: #ff4b2b;
+}
+
+.highlight.bias {
+    background-color: #ffde5b;
+}
+
+.highlight.bias:hover {
+    background-color: #ffcc00;
 }
 
 .highlight::after {
@@ -441,4 +451,89 @@ div {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+.headline-scroller-wrapper {
+  overflow-x: auto; /* scrollable area */
+  white-space: nowrap;
+  position: relative;
+  width: 100%;
+  background: #f9f9f9;
+  padding: 1rem;
+  scroll-behavior: smooth;
+}
+
+.headline-scroller-wrapper:hover {
+  cursor: grab;
+}
+
+/* Optional: prettier scrollbar */
+.headline-scroller-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.headline-scroller-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+/* Scrolling track container */
+.headline-scroller {
+  display: flex;
+  gap: 1rem;
+  width: max-content;
+  animation: scroll-left 60s linear infinite;
+  will-change: transform;
+}
+
+/* Pause the animation when user hovers so they can scroll */
+.headline-scroller-wrapper:hover .headline-scroller {
+  animation-play-state: paused;
+}
+
+/* Cards stay styled and visible */
+.headline-card {
+  min-width: 250px;
+  max-width: 300px;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.headline-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.headline-content {
+  padding: 0.5rem;
+}
+
+.headline-content a {
+  display: block;
+  font-weight: bold;
+  font-size: 1rem;
+  word-wrap: break-word;
+  white-space: normal;       /* allow text to wrap */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 3.6em;         /* roughly 2 lines */
+  line-height: 1.2em;
+}
+
+.source {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* Animation */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
