@@ -35,7 +35,7 @@ def get_trusted_headlines():
         "language": "en",
         "country": "us",
         "category": "politics,world,domestic,business,top",
-        "size": 8,
+        "size": 10,
         "apikey": api_key
     }
 

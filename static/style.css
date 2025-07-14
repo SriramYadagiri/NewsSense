@@ -459,44 +459,19 @@ div {
     100% { transform: rotate(360deg); }
 }
 
-.headline-scroller-wrapper {
-  overflow-x: auto; /* scrollable area */
-  white-space: nowrap;
+.headline-wrapper {
   position: relative;
   width: 100%;
-  background: #f9f9f9;
+}
+
+.headline-scroller {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
   padding: 1rem;
   scroll-behavior: smooth;
 }
 
-.headline-scroller-wrapper:hover {
-  cursor: grab;
-}
-
-/* Optional: prettier scrollbar */
-.headline-scroller-wrapper::-webkit-scrollbar {
-  height: 6px;
-}
-.headline-scroller-wrapper::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.15);
-  border-radius: 3px;
-}
-
-/* Scrolling track container */
-.headline-scroller {
-  display: flex;
-  gap: 1rem;
-  width: max-content;
-  animation: scroll-left 60s linear infinite;
-  will-change: transform;
-}
-
-/* Pause the animation when user hovers so they can scroll */
-.headline-scroller-wrapper:hover .headline-scroller {
-  animation-play-state: paused;
-}
-
-/* Cards stay styled and visible */
 .headline-card {
   min-width: 250px;
   max-width: 300px;
@@ -515,18 +490,7 @@ div {
 
 .headline-content {
   padding: 0.5rem;
-}
-
-.headline-content a {
-  display: block;
-  font-weight: bold;
-  font-size: 1rem;
   word-wrap: break-word;
-  white-space: normal;       /* allow text to wrap */
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-height: 3.6em;         /* roughly 2 lines */
-  line-height: 1.2em;
 }
 
 .source {
@@ -534,12 +498,31 @@ div {
   color: #888;
 }
 
-/* Animation */
-@keyframes scroll-left {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.7);
+  border: none;
+  padding: 0.5rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 2;
+  border-radius: 50%;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: all 0.2s ease-in-out;
+}
+
+.arrow:hover {
+  transform: translateY(-50%) scale(1.1);
+  background-color: #f0f0f0d2;
+  box-shadow: 0 4px 12px rgba(21, 59, 66, 0.2);
+}
+
+.arrow.left {
+  left: 0.5rem;
+}
+
+.arrow.right {
+  right: 0.5rem;
 }
