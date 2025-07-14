@@ -22,3 +22,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.arrow').forEach(btn => btn.style.display = 'none');
     }
 });
+
+const messages = [
+        "Analyzing article, please wait...",
+        "Identifying bias...",
+        "Scoring article...",
+        "Summarizing content...",
+        "Rewrting text in an unbiased form..."
+    ];
+
+let currentIndex = 0;
+const messageElement = document.getElementById("loading-message");
+
+setInterval(() => {
+    currentIndex = (currentIndex + 1) % messages.length;
+    messageElement.textContent = messages[currentIndex];
+}, 5000); 
