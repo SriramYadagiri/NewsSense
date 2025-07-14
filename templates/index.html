@@ -34,27 +34,21 @@
         </div>
     </section>
 
-<div class="headline-scroller-wrapper">
-  <div class="headline-scroller">
+    <div class="headline-wrapper">
+  <div class="headline-scroller" id="headlineScroller">
     {% for article in trusted_articles %}
-      <div class="headline-card">
-        <img src="{{ article.image }}" alt="news" />
-        <div class="headline-content">
-          <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
-          <p class="source">{{ article.source }}</p>
-        </div>
+    <div class="headline-card">
+      <img src="{{ article.image }}" alt="news" />
+      <div class="headline-content">
+        <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+        <p class="source">{{ article.source }}</p>
       </div>
-    {% endfor %}
-    {% for article in trusted_articles %}
-      <div class="headline-card">
-        <img src="{{ article.image }}" alt="news" />
-        <div class="headline-content">
-          <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
-          <p class="source">{{ article.source }}</p>
-        </div>
-      </div>
+    </div>
     {% endfor %}
   </div>
+
+  <button class="arrow left" onclick="scrLeft()">&#8592;</button>
+  <button class="arrow right" onclick="scrRight()">&#8594;</button>
 </div>
 
 
@@ -106,13 +100,6 @@
         </div>
     </section>
     
-    <script>
-        const form = document.getElementById('analyze-form');
-        const overlay = document.getElementById('loading-overlay');
-
-        form.addEventListener('submit', () => {
-            overlay.style.display = 'block';
-        });
-    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
