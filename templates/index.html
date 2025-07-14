@@ -85,7 +85,7 @@
 
             <div id="loading-overlay">
                 <div class="spinner"></div>
-                <p>Analyzing article, please wait...</p>
+                <p id="loading-message">Analyzing article, please wait...</p>
             </div>
         </div>
     </section>
@@ -113,6 +113,22 @@
         form.addEventListener('submit', () => {
             overlay.style.display = 'block';
         });
+    const messages = [
+        "Analyzing article, please wait...",
+        "Identifying bias...",
+        "Scoring article...",
+        "Summarizing content...",
+        "Rewrting text in an unbiased form..."
+    ];
+
+    let currentIndex = 0;
+    const messageElement = document.getElementById("loading-message");
+
+    setInterval(() => {
+        currentIndex = (currentIndex + 1) % messages.length;
+        messageElement.textContent = messages[currentIndex];
+    }, 5000); 
+        
     </script>
 </body>
 </html>
