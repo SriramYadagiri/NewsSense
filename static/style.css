@@ -368,10 +368,23 @@ div {
     background-color: #ff4b2b;
 }
 
+.highlight.misinfo.unverified {
+    background-color: #a09e9c;
+}
+.highlight.misinfo.unverified:hover {
+    background-color: #696866;
+}
+
+.highlight.misinfo.supported {
+    background-color: rgb(153, 192, 85)
+}
+.highlight.misinfo.supported:hover {
+    background-color: darkolivegreen
+}
+
 .highlight.bias {
     background-color: #ffde5b;
 }
-
 .highlight.bias:hover {
     background-color: #ffcc00;
 }

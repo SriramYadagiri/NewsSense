@@ -6,11 +6,12 @@ import re
 from dotenv import load_dotenv
 from flask import Flask, request, render_template
 import requests
-from openai import OpenAI
+from openai import OpenAI, BadRequestError
 from bs4 import BeautifulSoup
 from newspaper import Article
 import concurrent.futures
 from agents.misinfo_agent import agent
+from agents.misinfo_agent import verify_claims_with_agent
 
 import PyPDF2
 from docx import Document
@@ -18,7 +19,7 @@ from docx import Document
 load_dotenv(override=True)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-print(os.getenv("OPENAI_API_KEY"))
+MAX_WORDS = 5000  # Limit for summarization
 
 app = Flask(__name__)
 
@@ -34,7 +35,7 @@ def get_trusted_headlines():
         "domainurl": trusted_sources,
         "language": "en",
         "country": "us",
-        "category": "politics,world,domestic,business,top",
+        "category": "top",
         "size": 10,
         "apikey": api_key
     }
@@ -87,19 +88,26 @@ def summarize_article(text):
     with open(text_file_path, 'r') as file:
             initial_prompt = file.read()
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": initial_prompt},
-            {"role": "user", "content": "Summarize the following article:\n\n" + text}
-        ],
-        temperature=0,
-        top_p=1,
-        max_tokens=1000
-    )
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": initial_prompt},
+                {"role": "user", "content": "Summarize the following article:\n\n" + text}
+            ],
+            temperature=0,
+            top_p=1,
+            max_tokens=1000
+        )
 
-    output = response.choices[0].message.content.strip()
-    return output
+        output = response.choices[0].message.content.strip()
+        return output
+    
+    except BadRequestError as e:
+        if e.code == "context_length_exceeded":
+            return {"error": f"Input is too large. Please limit input to {MAX_WORDS} words or fewer."}
+    except Exception as e:
+        return {"error": "An error occurred while processing the request."}
 
 def determine_bias(text):
     text_file_path = 'prompts/bias_message.txt'
@@ -108,30 +116,25 @@ def determine_bias(text):
 
     user_message = f"Analyze the following text for bias and provide a bias score:\n\n{text}"
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages = [
-            {"role": "system", "content": initial_prompt},
-            {"role": "user", "content": user_message}
-        ],
-        temperature=0,
-        top_p=1,
-        max_tokens=1500
-    )
-
-    output = response.choices[0].message.content.strip()
-    print("Bias Analysis: " + output)
-    return json.loads(output)
-
-def verify_claims_with_agent(text):
     try:
-        response = agent.run(f"Verify factual claims in this article:\n\n{text}")
-        print(response.content)
-        result = response.content
-        return json.loads(result)
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages = [
+                {"role": "system", "content": initial_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0,
+            top_p=1,
+            max_tokens=1500
+        )
+
+        output = response.choices[0].message.content.strip()
+        return json.loads(output)
+    except BadRequestError as e:
+        if e.code == "context_length_exceeded":
+            return {"error": f"Input is too large. Please limit input to {MAX_WORDS} words or fewer."}
     except Exception as e:
-        print("Agent verification error:", e)
-        return []
+        return {"error": "An error occurred while processing the request."}
 
 def apply_combined_highlights(text, bias_passages, misinfo_claims):
     spans = []
@@ -147,12 +150,16 @@ def apply_combined_highlights(text, bias_passages, misinfo_claims):
             })
 
     # Collect misinformation highlights
+    print(misinfo_claims)
     for m in misinfo_claims:
-        claim = m["claim"].strip()
+        claim = m["original-passage"].strip()
+        print(claim)
         if claim in text:
+            print("Made it through")
             spans.append({
                 "type": "misinfo",
                 "passage": claim,
+                "verdict": m["verdict"].strip(),
                 "reason": f"{m['verdict']}: {m['justification']}"
             })
 
@@ -161,6 +168,7 @@ def apply_combined_highlights(text, bias_passages, misinfo_claims):
         return text.find(span["passage"])
 
     spans = sorted(spans, key=start_index)
+    print(spans)
 
     # Track modified positions to avoid re-highlighting same passage
     modified = set()
@@ -174,7 +182,7 @@ def apply_combined_highlights(text, bias_passages, misinfo_claims):
         if span["type"] == "bias":
             tag = f'<span class="highlight bias" data-reason="{reason}">{escaped_passage}</span>'
         else:
-            tag = f'<span class="highlight misinfo" data-reason="{reason}">{escaped_passage}</span>'
+            tag = f'<span class="highlight misinfo {span["verdict"].lower()}" data-reason="{reason}">{escaped_passage}</span>'
 
         text = text.replace(passage, tag, 1)
         modified.add(passage)
@@ -186,26 +194,31 @@ def unbias(text, highlighted_passages):
     with open(text_file_path, 'r') as file:
         initial_prompt = file.read()
     
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "system", "content": initial_prompt},
-            {"role": "user", "content": f"Biased Phrases: {highlighted_passages}\n\nArticle:\n{text}"}
-        ],
-        temperature=0,
-        top_p=1,
-        max_tokens=1500
-    )
-    
-    output = response.choices[0].message.content.strip()
-    return output
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": initial_prompt},
+                {"role": "user", "content": f"Biased Phrases: {highlighted_passages}\n\nArticle:\n{text}"}
+            ],
+            temperature=0,
+            top_p=1,
+            max_tokens=1500
+        )
+        
+        output = response.choices[0].message.content.strip()
+        return output
+    except BadRequestError as e:
+        if e.code == "context_length_exceeded":
+            return {"error": f"Input is too large. Please limit input to {MAX_WORDS} words or fewer."}
+    except Exception as e:
+        return {"error": "An error occurred while processing the request."}
 
 # --- Routes ---
 
 @app.route('/')
 def home():
     headlines = get_trusted_headlines()
-    print(headlines)
     return render_template('index.html', trusted_articles=headlines)
 
 @app.route('/analyze', methods=['POST'])
@@ -247,9 +260,6 @@ def analyze():
     else:
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
 
-    # print(verify_claims_with_agent(raw_text))
-    # return render_template('index.html', error="Just testing out misinfo agent")
-
     # Run summarization, bias detection, and unbiasing in parallel
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_summary = executor.submit(summarize_article, raw_text)
@@ -258,11 +268,20 @@ def analyze():
         summary = future_summary.result()
         bias = future_bias.result()
 
-        future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
-        misinfo_verdicts = future_misinfo.result()
+        # Check for errors in summarization or bias detection
+        if "error" in summary:
+            return render_template("index.html", error=summary["error"])
+        if "error" in bias:
+            return render_template("index.html", error=bias["error"])
 
+        future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
         future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
+
+        misinfo_verdicts = future_misinfo.result()
         unbiased_text = future_unbias.result()
+
+        if "error" in unbiased_text:
+            return render_template("index.html", error=unbiased_text["error"])
 
     highlighted_text = apply_combined_highlights(
         raw_text, bias["highlighted_passages"], misinfo_verdicts
