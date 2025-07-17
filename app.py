@@ -107,6 +107,7 @@ def summarize_article(text):
         if e.code == "context_length_exceeded":
             return {"error": f"Input is too large. Please limit input to {MAX_WORDS} words or fewer."}
     except Exception as e:
+        print(e)
         return {"error": "An error occurred while processing the request."}
 
 def determine_bias(text):
@@ -134,6 +135,7 @@ def determine_bias(text):
         if e.code == "context_length_exceeded":
             return {"error": f"Input is too large. Please limit input to {MAX_WORDS} words or fewer."}
     except Exception as e:
+        print(e)
         return {"error": "An error occurred while processing the request."}
 
 def apply_combined_highlights(text, bias_passages, misinfo_claims):
@@ -212,6 +214,7 @@ def unbias(text, highlighted_passages):
         if e.code == "context_length_exceeded":
             return {"error": f"Input is too large. Please limit input to {MAX_WORDS} words or fewer."}
     except Exception as e:
+        print(e)
         return {"error": "An error occurred while processing the request."}
 
 # --- Routes ---
@@ -223,6 +226,12 @@ def home():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
+    return render_template("result.html", summary="summary",
+                           original_text="raw_text",
+                           highlighted_text="highlighted_text",
+                           unbiased_text="unbiased_text",
+                           score="score",
+                           rubric="rubric",)
     pasted_text = request.form.get('article_text', '').strip()
     article_url = request.form.get('article_url', '').strip()
     uploaded_file = request.files.get('article_file')

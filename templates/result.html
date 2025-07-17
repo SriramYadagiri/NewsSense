@@ -55,9 +55,21 @@
                     <button onclick="showView('unbiased')">Unbiased</button>
                 </div>
                 <div class="doc-content" id="doc-original">{{ original_text | safe }}</div>
-                <div class="info-banner" id="hoverInfoBanner">
+                <div class="info-banner" id="hoverInfoBanner" style="display:none">
                     You can hover over the highlighted text to see why it's biased
                     <button class="close-banner" onclick="closeInfoBanner()">&#10006;</button>
+                </div>
+                <div id="highlight-div" style="margin: 20px;">
+                    <button id="highlight-key-toggle" onclick="toggleKey()">Show/Hide Highlight Key</button>
+
+                    <div id="highlightKey">
+                        <ul>
+                        <li><span class="key-color key-yellow">Yellow</span> – Bias</li>
+                        <li><span class="key-color key-gray">Gray</span> – Unverified Claim</li>
+                        <li><span class="key-color key-green">Green</span> – Supported Claim</li>
+                        <li><span class="key-color key-red">Red</span> – Disputed Claim</li>
+                        </ul>
+                    </div>
                 </div>
                 <div class="doc-content" id="doc-highlighted" style="display:none">{{ highlighted_text | safe }}</div>
                 <div class="doc-content" id="doc-unbiased" style="display:none">{{ unbiased_text | safe }}</div>
@@ -90,9 +102,24 @@
 
         function showView(view) {
             const views = ['original', 'highlighted', 'unbiased'];
+            const banner = document.getElementById("hoverInfoBanner");
+            const highlightKey = document.getElementById("highlight-div");
+
+            if (view === 'highlighted') {
+                banner.style.display = "block"; // Show info banner for highlighted view
+                highlightKey.style.display = "block"; // Show highlight key
+            } else {
+                banner.style.display = "none"; // Hide info banner for other views
+                highlightKey.style.display = "none"; // Hide highlight key
+            }
             views.forEach(id => {
                 document.getElementById(`doc-${id}`).style.display = (id === view) ? 'block' : 'none';
             });
+        }
+
+        function toggleKey() {
+            const keyDiv = document.getElementById("highlightKey");
+            keyDiv.style.display = keyDiv.style.display === "none" ? "block" : "none";
         }
 
         function closeInfoBanner() {
