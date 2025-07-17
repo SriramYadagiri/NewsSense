@@ -28,7 +28,7 @@ const messages = [
         "Identifying bias...",
         "Scoring article...",
         "Summarizing content...",
-        "Rewrting text in an unbiased form..."
+        "Rewriting text in an unbiased form..."
     ];
 
 let currentIndex = 0;
