@@ -226,12 +226,6 @@ def home():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    return render_template("result.html", summary="summary",
-                           original_text="raw_text",
-                           highlighted_text="highlighted_text",
-                           unbiased_text="unbiased_text",
-                           score="score",
-                           rubric="rubric",)
     pasted_text = request.form.get('article_text', '').strip()
     article_url = request.form.get('article_url', '').strip()
     uploaded_file = request.files.get('article_file')
