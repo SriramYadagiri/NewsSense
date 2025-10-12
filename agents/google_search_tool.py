@@ -3,7 +3,9 @@ import requests
 import json
 from typing import Optional, List
 from agno.tools import Toolkit
+from dotenv import load_dotenv
 
+load_dotenv(override=True)
 class GoogleSearchToolkit(Toolkit):
     """
     Google Search Tool using Custom Search JSON API.
