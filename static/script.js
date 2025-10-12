@@ -45,7 +45,7 @@ function setDarkMode(enabled) {
     document.body.classList.toggle("dark-mode", enabled);
     localStorage.setItem("darkMode", enabled);
     toggleButton.textContent = enabled ? "Light Mode" : "Dark Mode";
-    document.getElementById("logo-img").src = enabled ? "../static/images/logo-dark.svg" : "../static/images/logo-light.svg";
+    document.getElementById("logo-img").src = enabled ? "../static/images/logo-dark-2.png" : "../static/images/logo-light.png";
 }
 
 // Load saved preference
