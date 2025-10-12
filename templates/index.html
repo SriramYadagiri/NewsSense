@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NewsSense - Detect News Bias</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+    <link rel="icon" href="../static/images/favicon.png" type="image/svg+xml">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
     <!-- ✅ Header -->
     <header class="main-header">
-        <a href="/" style="text-decoration: none; color: #333" class="logo"><span style="color:rgb(0, 123, 255)">News</span>Sense</a>
+        <a href="/" style="text-decoration: none;" class="logo"><img src="../static/images/logo-light.svg" width="60px" id="logo-img"></img><span style="color:rgb(0, 123, 255)">News</span>Sense</a>
         <nav class="nav-links">
+            <button id="darkModeToggle" class="dark-toggle">Dark Mode</button>
             <a href="/">Home</a>
             <a href="#how-it-works">How It Works</a>
             <a href="#about">About</a>
@@ -40,7 +42,7 @@
     <div class="headline-card">
       <img src="{{ article.image }}" alt="news" />
       <div class="headline-content">
-        <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+        <a href="{{ article.url }}" target="_blank" class="article-title" style="text-decoration: none;">{{ article.title }}</a>
         <p class="source">{{ article.source }}</p>
       </div>
     </div>
