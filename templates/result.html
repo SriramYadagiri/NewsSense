@@ -9,7 +9,7 @@
 </head>
 <body>
     <header class="main-header">
-        <a href="/" style="text-decoration: none; color: #333" class="logo"><span style="color:rgb(0, 123, 255)">News</span>Sense</a>
+        <a href="/" style="text-decoration: none; color: #333" class="logo"><img src="../static/images/logo-light.svg" width="60px" id="logo-img"></img><span style="color:rgb(0, 123, 255)">News</span>Sense</a>
         <nav class="nav-links">
             <a href="/">Home</a>
             <a href="#summary">Summary</a>
@@ -79,6 +79,7 @@
         </div>
     </section>
 
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
         function toggleRubric() {
             const popup = document.getElementById("rubricPopup");

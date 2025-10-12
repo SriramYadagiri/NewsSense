@@ -4,6 +4,9 @@ from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 from agents.google_search_tool import GoogleSearchToolkit
 import re
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 llm = OpenAIChat(id="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"), temperature=0)
 google_search_tool = GoogleSearchToolkit()

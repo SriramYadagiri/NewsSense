@@ -6,6 +6,7 @@ import re
 from dotenv import load_dotenv
 from flask import Flask, request, render_template
 import requests
+import time
 from openai import OpenAI, BadRequestError
 from bs4 import BeautifulSoup
 from newspaper import Article
@@ -17,6 +18,7 @@ import PyPDF2
 from docx import Document
 
 load_dotenv(override=True)
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 MAX_WORDS = 5000  # Limit for summarization
@@ -25,11 +27,21 @@ app = Flask(__name__)
 
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36"
 
+cached_news = None
+last_fetched = 0
+CACHE_DURATION = 15 * 60  # 15 minutes in seconds
+
 def get_trusted_headlines():
+    global cached_news, last_fetched
+    now = time.time()
+
+    if cached_news and (now - last_fetched) < CACHE_DURATION:
+        return cached_news
+
     api_key = os.getenv("NEWS_API_KEY")
     base_url = "https://newsdata.io/api/1/latest"
 
-    trusted_sources = "bbc.com,reuters.com,apnews.com,forbes.com,wsj.com"
+    trusted_sources = "bbc.com,reuters.com,forbes.com,wsj.com"
 
     params = {
         "domainurl": trusted_sources,
@@ -47,7 +59,8 @@ def get_trusted_headlines():
 
         articles = data.get("results", [])
 
-        return [
+        last_fetched = now
+        cached_news = [
             {
                 "title": article["title"],
                 "source": article["source_name"],
@@ -56,6 +69,8 @@ def get_trusted_headlines():
             }
             for article in articles if article["image_url"]
         ]
+
+        return cached_news
 
     except requests.exceptions.RequestException as e:
         print("NewsAPI Request Error:", e)

@@ -18,7 +18,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 2rem;
+    padding: 0.5rem 2rem;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -27,6 +27,12 @@ body {
 .logo {
     font-weight: 700;
     font-size: 1.5rem;
+    color: #333333;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin: none;
+    padding: none;
 }
 
 .nav-links a {
@@ -42,7 +48,7 @@ body {
 
 /* ========== Hero Section ========== */
 .hero {
-    background: linear-gradient(120deg, #007BFF, #00B8FF);
+    background: linear-gradient(120deg, #007BFF, #52ceff);
     color: white;
     padding: 5rem 2rem;
     text-align: center;
@@ -108,6 +114,21 @@ input[type="file"] {
     border-radius: 6px;
     font-size: 14px;
     resize: vertical;
+}
+
+input[type="file"]::file-selector-button {
+  /* Style properties for the button */
+  background-color: #007bff;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  /* Add hover effects, etc. */
+}
+
+input[type="file"]::file-selector-button:hover {
+  background-color: #0056b3;
 }
 
 input[type="submit"] {
@@ -493,6 +514,7 @@ div {
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   flex-shrink: 0;
+  color: #333
 }
 
 .headline-card img {
@@ -582,4 +604,169 @@ div {
 
 #highlightKey ul li {
   margin-bottom: 10px;
+}
+
+body.dark-mode {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+
+body.dark-mode .main-header {
+  background-color: #1e1e1e;
+  box-shadow: 0 2px 6px rgba(255, 255, 255, 0.05);
+}
+
+body.dark-mode .nav-links a {
+  color: #e0e0e0;
+}
+
+body.dark-mode .nav-links a:hover {
+  color: #90caf9;
+}
+
+body.dark-mode .hero {
+  background: linear-gradient(120deg, #0d47a1, #00acc1);
+  color: #ffffff;
+}
+
+body.dark-mode .cta-button {
+  background-color: #1e1e1e;
+  color: #90caf9;
+}
+
+body.dark-mode .cta-button:hover {
+  background-color: #333;
+}
+
+body.dark-mode .form-section,
+body.dark-mode .form-container,
+body.dark-mode .info-section,
+body.dark-mode .result-card,
+body.dark-mode .summary-box,
+body.dark-mode .doc-content,
+body.dark-mode #highlightKey,
+body.dark-mode .headline-card {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+  border-color: #333;
+}
+
+body.dark-mode .article-title {
+  color: #90caf9;
+}
+
+body.dark-mode .logo {
+  color: #e0e0e0;
+}
+
+
+body.dark-mode .info-section:nth-child(odd) {
+  background-color: #2a2a2a;
+}
+
+
+body.dark-mode textarea,
+body.dark-mode input[type="text"],
+body.dark-mode input[type="file"] {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #444;
+}
+
+body.dark-mode input[type="submit"], body.dark-mode input[type="file"]::file-selector-button {
+  background-color: #1976d2;
+}
+
+body.dark-mode input[type="submit"]:hover, body.dark-mode input[type="file"]::file-selector-button:hover {
+  background-color: #1565c0;
+}
+
+body.dark-mode .rubric-popup {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+body.dark-mode .highlight::after {
+  background: #2e2e4d;
+}
+
+body.dark-mode .info-banner {
+  background-color: #1e2a36;
+  border-left-color: #2196f3;
+  color: #e0e0e0;
+}
+
+body.dark-mode .doc-toggle-buttons button {
+  background-color: #333;
+  color: #e0e0e0;
+}
+
+body.dark-mode .doc-toggle-buttons button.active {
+  background-color: #2196f3;
+  color: white;
+}
+
+body.dark-mode .back-button {
+  background-color: #1976d2;
+}
+
+body.dark-mode .back-button:hover {
+  background-color: #0d47a1;
+}
+
+body.dark-mode .arrow {
+  background: rgba(30, 30, 30, 0.7);
+  color: #e0e0e0;
+}
+
+body.dark-mode .arrow:hover {
+  background-color: #444;
+}
+
+body.dark-mode ::-webkit-scrollbar {
+  height: 8px; /* width of the scrollbar */
+  background-color: black; /* black background */
+}
+
+/* Scrollbar thumb (the draggable controller) */
+body.dark-mode ::-webkit-scrollbar-thumb {
+  height: 8px;
+  background-color: #1976d2; /* blue thumb */
+  border-radius: 12px; /* optional: rounded edges */
+}
+
+/* Optional: scrollbar hover effect */
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background-color: #0d47a1;
+}
+
+body.dark-mode #highlight-key-toggle {
+  background-color: #2a2a2a;
+  color: #e0e0e0;
+  border-color: #555;
+}
+
+body.dark-mode .score-value,
+body.dark-mode .score-total {
+  color: #90caf9;
+}
+
+body.dark-mode #loading-overlay {
+  background: rgba(30, 30, 30, 0.8);
+  color: #e0e0e0;
+}
+
+.dark-toggle {
+  background-color: transparent;
+  border: 1px solid #ccc;
+  color: #333;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+body.dark-mode .dark-toggle {
+  color: #e0e0e0;
+  border-color: #777;
 }

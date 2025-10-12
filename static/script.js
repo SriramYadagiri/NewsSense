@@ -38,3 +38,21 @@ setInterval(() => {
     currentIndex = (currentIndex + 1) % messages.length;
     messageElement.textContent = messages[currentIndex];
 }, 5000); 
+
+const toggleButton = document.getElementById("darkModeToggle");
+
+function setDarkMode(enabled) {
+    document.body.classList.toggle("dark-mode", enabled);
+    localStorage.setItem("darkMode", enabled);
+    toggleButton.textContent = enabled ? "Light Mode" : "Dark Mode";
+    document.getElementById("logo-img").src = enabled ? "../static/images/logo-dark.svg" : "../static/images/logo-light.svg";
+}
+
+// Load saved preference
+const saved = localStorage.getItem("darkMode") === "true";
+setDarkMode(saved);
+
+// Toggle on click
+toggleButton.addEventListener("click", () => {
+    setDarkMode(!document.body.classList.contains("dark-mode"));
+});
