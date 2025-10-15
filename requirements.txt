@@ -90,7 +90,6 @@ python-docx
 python-dotenv
 python-multipart
 pytweening
-pywin32
 PyYAML
 pyzmq
 referencing
@@ -121,3 +120,4 @@ wcwidth
 webencodings
 Werkzeug
 yarg
+
