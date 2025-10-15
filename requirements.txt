@@ -1,4 +1,4 @@
-﻿agno
+﻿agno==1.7.2
 annotated-types
 anyio
 asttokens
@@ -120,4 +120,5 @@ wcwidth
 webencodings
 Werkzeug
 yarg
+
 
