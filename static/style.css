@@ -191,7 +191,7 @@ input[type="submit"]:hover {
     margin-bottom: 1rem;
 }
 
-.info-section p {
+.info-section {
     font-size: 1.1rem;
     color: #555;
 }
@@ -642,13 +642,16 @@ body.dark-mode .form-section,
 body.dark-mode .form-container,
 body.dark-mode .info-section,
 body.dark-mode .result-card,
-body.dark-mode .summary-box,
 body.dark-mode .doc-content,
 body.dark-mode #highlightKey,
 body.dark-mode .headline-card {
   background-color: #1e1e1e;
   color: #e0e0e0;
   border-color: #333;
+}
+
+body.dark-mode .summary-box {
+  background-color: #2a2a2a;
 }
 
 body.dark-mode .article-title {
