@@ -17,6 +17,19 @@ from agents.misinfo_agent import verify_claims_with_agent
 import PyPDF2
 from docx import Document
 
+import concurrent.futures
+
+def run_with_timeout(func, *args, timeout=40):
+    """Safely run a function with a time limit (in seconds)."""
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(func, *args)
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            print(f"Timeout reached for {func.__name__}")
+            return {"error": f"{func.__name__} took too long. Please try a shorter article."}
+
+
 load_dotenv(override=True)
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -78,6 +91,8 @@ def get_trusted_headlines():
 
 def scrape_with_newspaper_or_fallback(url):
     try:
+        if not url.startswith("http"):
+            url = "https://" + url.lstrip(":/")
         article = Article(url)
         article.download()
         article.parse()
@@ -112,7 +127,7 @@ def summarize_article(text):
             ],
             temperature=0,
             top_p=1,
-            max_tokens=1000
+            max_tokens=800
         )
 
         output = response.choices[0].message.content.strip()
@@ -279,27 +294,19 @@ def analyze():
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
 
     # Run summarization, bias detection, and unbiasing in parallel
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_summary = executor.submit(summarize_article, raw_text)
-        future_bias = executor.submit(determine_bias, raw_text)
+    summary = run_with_timeout(summarize_article, raw_text, timeout=40)
+    bias = run_with_timeout(determine_bias, raw_text, timeout=40)
 
-        summary = future_summary.result()
-        bias = future_bias.result()
+    if "error" in summary:
+        return render_template("index.html", error=summary["error"])
+    if "error" in bias:
+        return render_template("index.html", error=bias["error"])
 
-        # Check for errors in summarization or bias detection
-        if "error" in summary:
-            return render_template("index.html", error=summary["error"])
-        if "error" in bias:
-            return render_template("index.html", error=bias["error"])
+    misinfo_verdicts = run_with_timeout(verify_claims_with_agent, raw_text, timeout=50)
+    unbiased_text = run_with_timeout(unbias, raw_text, bias["highlighted_passages"], timeout=40)
 
-        future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
-        future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
-
-        misinfo_verdicts = future_misinfo.result()
-        unbiased_text = future_unbias.result()
-
-        if "error" in unbiased_text:
-            return render_template("index.html", error=unbiased_text["error"])
+    if "error" in unbiased_text:
+        return render_template("index.html", error=unbiased_text["error"])
 
     highlighted_text = apply_combined_highlights(
         raw_text, bias["highlighted_passages"], misinfo_verdicts
