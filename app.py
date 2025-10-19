@@ -301,6 +301,9 @@ def analyze():
         return render_template("index.html", error=bias["error"])
 
     misinfo_verdicts = []
+    unbiased_text = unbias(raw_text, bias["highlighted_passages"])
+    if isinstance(unbiased_text, dict) and "error" in unbiased_text:
+        return render_template("index.html", error=unbiased_text["error"])
 
     highlighted_text = apply_combined_highlights(
         raw_text, bias["highlighted_passages"], misinfo_verdicts
