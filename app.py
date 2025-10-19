@@ -263,57 +263,54 @@ def analyze():
 
     if pasted_text:
         raw_text = pasted_text
-
     elif article_url:
         raw_text = scrape_with_newspaper_or_fallback(article_url)
         if not raw_text:
             return render_template("index.html", error="Failed to extract article from URL. Try pasting the article text directly or uploading a file.")
-
     elif uploaded_file and uploaded_file.filename != '':
         filename = uploaded_file.filename.lower()
         if filename.endswith('.txt'):
             raw_text = uploaded_file.read().decode('utf-8')
-
         elif filename.endswith('.pdf'):
             pdf = PyPDF2.PdfReader(uploaded_file)
-            pages_text = []
-            for page in pdf.pages:
-                pages_text.append(page.extract_text() or "")
+            pages_text = [page.extract_text() or "" for page in pdf.pages]
             raw_text = "\n\n".join(pages_text)
-
         elif filename.endswith('.docx'):
             docx_file = io.BytesIO(uploaded_file.read())
             doc = Document(docx_file)
             paras = [para.text for para in doc.paragraphs if para.text.strip()]
             raw_text = "\n\n".join(paras)
-
         else:
             return render_template("index.html", error="Unsupported file type. Only .txt, .pdf, and .docx are allowed.")
-
     else:
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
 
-    # Run summarization, bias detection, and unbiasing in parallel
-    summary = run_with_timeout(summarize_article, raw_text, timeout=40)
-    bias = run_with_timeout(determine_bias, raw_text, timeout=40)
+    # Truncate long articles to reduce memory usage
+    words = raw_text.split()
+    MAX_WORDS = 2000
+    if len(words) > MAX_WORDS:
+        raw_text = " ".join(words[:MAX_WORDS])
 
-    if "error" in summary:
+    # --- Run GPT tasks sequentially ---
+    summary = summarize_article(raw_text)
+    if isinstance(summary, dict) and "error" in summary:
         return render_template("index.html", error=summary["error"])
-    if "error" in bias:
+
+    bias = determine_bias(raw_text)
+    if isinstance(bias, dict) and "error" in bias:
         return render_template("index.html", error=bias["error"])
 
-    misinfo_verdicts = run_with_timeout(verify_claims_with_agent, raw_text, timeout=50)
-    unbiased_text = run_with_timeout(unbias, raw_text, bias["highlighted_passages"], timeout=40)
-
-    if "error" in unbiased_text:
+    misinfo_verdicts = verify_claims_with_agent(raw_text)
+    unbiased_text = unbias(raw_text, bias["highlighted_passages"])
+    if isinstance(unbiased_text, dict) and "error" in unbiased_text:
         return render_template("index.html", error=unbiased_text["error"])
 
     highlighted_text = apply_combined_highlights(
         raw_text, bias["highlighted_passages"], misinfo_verdicts
     )
 
-    score = bias["bias_score"]
-    rubric = bias["rubric_justification"]
+    score = bias.get("bias_score", 0)
+    rubric = bias.get("rubric_justification", "")
 
     return render_template('result.html',
                            summary=summary,
@@ -321,7 +318,7 @@ def analyze():
                            highlighted_text=highlighted_text,
                            unbiased_text=unbiased_text,
                            score=score,
-                           rubric=rubric,)
+                           rubric=rubric)
 
 
 if __name__ == '__main__':
