@@ -263,54 +263,71 @@ def analyze():
 
     if pasted_text:
         raw_text = pasted_text
+
     elif article_url:
         raw_text = scrape_with_newspaper_or_fallback(article_url)
         if not raw_text:
             return render_template("index.html", error="Failed to extract article from URL. Try pasting the article text directly or uploading a file.")
+
     elif uploaded_file and uploaded_file.filename != '':
         filename = uploaded_file.filename.lower()
         if filename.endswith('.txt'):
             raw_text = uploaded_file.read().decode('utf-8')
+
         elif filename.endswith('.pdf'):
             pdf = PyPDF2.PdfReader(uploaded_file)
-            pages_text = [page.extract_text() or "" for page in pdf.pages]
+            pages_text = []
+            for page in pdf.pages:
+                pages_text.append(page.extract_text() or "")
             raw_text = "\n\n".join(pages_text)
+
         elif filename.endswith('.docx'):
             docx_file = io.BytesIO(uploaded_file.read())
             doc = Document(docx_file)
             paras = [para.text for para in doc.paragraphs if para.text.strip()]
             raw_text = "\n\n".join(paras)
+
         else:
             return render_template("index.html", error="Unsupported file type. Only .txt, .pdf, and .docx are allowed.")
+
     else:
         return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
-
+    
     # Truncate long articles to reduce memory usage
     words = raw_text.split()
     MAX_WORDS = 2000
     if len(words) > MAX_WORDS:
         raw_text = " ".join(words[:MAX_WORDS])
 
-    # --- Run GPT tasks sequentially ---
-    summary = summarize_article(raw_text)
-    if isinstance(summary, dict) and "error" in summary:
-        return render_template("index.html", error=summary["error"])
+    # Run summarization, bias detection, and unbiasing in parallel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        future_summary = executor.submit(summarize_article, raw_text)
+        future_bias = executor.submit(determine_bias, raw_text)
 
-    bias = determine_bias(raw_text)
-    if isinstance(bias, dict) and "error" in bias:
-        return render_template("index.html", error=bias["error"])
+        summary = future_summary.result()
+        bias = future_bias.result()
 
-    misinfo_verdicts = []
-    unbiased_text = unbias(raw_text, bias["highlighted_passages"])
-    if isinstance(unbiased_text, dict) and "error" in unbiased_text:
-        return render_template("index.html", error=unbiased_text["error"])
+        # Check for errors in summarization or bias detection
+        if "error" in summary:
+            return render_template("index.html", error=summary["error"])
+        if "error" in bias:
+            return render_template("index.html", error=bias["error"])
+
+        future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
+        future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
+
+        misinfo_verdicts = future_misinfo.result()
+        unbiased_text = future_unbias.result()
+
+        if "error" in unbiased_text:
+            return render_template("index.html", error=unbiased_text["error"])
 
     highlighted_text = apply_combined_highlights(
         raw_text, bias["highlighted_passages"], misinfo_verdicts
     )
 
-    score = bias.get("bias_score", 0)
-    rubric = bias.get("rubric_justification", "")
+    score = bias["bias_score"]
+    rubric = bias["rubric_justification"]
 
     return render_template('result.html',
                            summary=summary,
@@ -318,7 +335,7 @@ def analyze():
                            highlighted_text=highlighted_text,
                            unbiased_text=unbiased_text,
                            score=score,
-                           rubric=rubric)
+                           rubric=rubric,)
 
 
 if __name__ == '__main__':
