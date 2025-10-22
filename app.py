@@ -13,11 +13,18 @@ from newspaper import Article
 import concurrent.futures
 from agents.misinfo_agent import agent
 from agents.misinfo_agent import verify_claims_with_agent
+import psutil
 
 import PyPDF2
 from docx import Document
 
 import concurrent.futures
+
+# Define this at the top so you can reuse it easily
+def log_memory_usage(label=""):
+    process = psutil.Process(os.getpid())
+    mem_mb = process.memory_info().rss / 1024 ** 2
+    print(f"[MEMORY] {label}: {mem_mb:.2f} MB")
 
 def run_with_timeout(func, *args, timeout=40):
     """Safely run a function with a time limit (in seconds)."""
@@ -265,7 +272,9 @@ def analyze():
         raw_text = pasted_text
 
     elif article_url:
+        log_memory_usage("Before scraping")
         raw_text = scrape_with_newspaper_or_fallback(article_url)
+        log_memory_usage("After scraping")
         if not raw_text:
             return render_template("index.html", error="Failed to extract article from URL. Try pasting the article text directly or uploading a file.")
 
@@ -297,7 +306,9 @@ def analyze():
     words = raw_text.split()
     MAX_WORDS = 2000
     if len(words) > MAX_WORDS:
-        raw_text = " ".join(words[:MAX_WORDS])
+        raw_text = " ".join(words[:MAX_WORDS]) 
+
+    log_memory_usage("Before summarization + bias detection")
 
     # Run summarization, bias detection, and unbiasing in parallel
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
@@ -306,6 +317,8 @@ def analyze():
 
         summary = future_summary.result()
         bias = future_bias.result()
+
+        log_memory_usage("After summarization + bias detection")
 
         # Check for errors in summarization or bias detection
         if "error" in summary:
@@ -319,6 +332,8 @@ def analyze():
         misinfo_verdicts = future_misinfo.result()
         unbiased_text = future_unbias.result()
 
+        log_memory_usage("After misinformation + unbiasing")
+
         if "error" in unbiased_text:
             return render_template("index.html", error=unbiased_text["error"])
 
@@ -328,6 +343,8 @@ def analyze():
 
     score = bias["bias_score"]
     rubric = bias["rubric_justification"]
+
+    log_memory_usage("Before rendering result")
 
     return render_template('result.html',
                            summary=summary,
