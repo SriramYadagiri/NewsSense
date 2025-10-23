@@ -1,16 +1,16 @@
 import html
 import io
-import json
-import os
+import uuid, json, os
 import re
 from dotenv import load_dotenv
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for, jsonify
 import requests
 import time
 from openai import OpenAI, BadRequestError
 from bs4 import BeautifulSoup
 from newspaper import Article
 import concurrent.futures
+from threading import Thread
 from agents.misinfo_agent import agent
 from agents.misinfo_agent import verify_claims_with_agent
 import psutil
@@ -261,98 +261,110 @@ def home():
     headlines = get_trusted_headlines()
     return render_template('index.html', trusted_articles=headlines)
 
-@app.route('/analyze', methods=['POST'])
+RESULTS_DIR = "results"
+os.makedirs(RESULTS_DIR, exist_ok=True)
+
+def process_article(job_id, raw_text):
+    """Runs the full analysis pipeline in a background thread."""
+    try:
+        # Parallel execution still fine inside thread
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future_summary = executor.submit(summarize_article, raw_text)
+            future_bias = executor.submit(determine_bias, raw_text)
+            summary = future_summary.result()
+            bias = future_bias.result()
+
+            future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
+            future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
+
+            misinfo_verdicts = future_misinfo.result()
+            unbiased_text = future_unbias.result()
+
+        highlighted_text = apply_combined_highlights(
+            raw_text, bias["highlighted_passages"], misinfo_verdicts
+        )
+
+        result = {
+            "summary": summary,
+            "original_text": raw_text,
+            "highlighted_text": highlighted_text,
+            "unbiased_text": unbiased_text,
+            "score": bias["bias_score"],
+            "rubric": bias["rubric_justification"]
+        }
+
+    except Exception as e:
+        result = {"error": str(e)}
+
+    # Save results to file
+    with open(os.path.join(RESULTS_DIR, f"{job_id}.json"), "w", encoding="utf-8") as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+
+
+@app.route("/analyze", methods=["POST"])
 def analyze():
     pasted_text = request.form.get('article_text', '').strip()
     article_url = request.form.get('article_url', '').strip()
     uploaded_file = request.files.get('article_file')
     raw_text = ""
 
+    # Handle input sources (same as before)
     if pasted_text:
         raw_text = pasted_text
-
     elif article_url:
-        log_memory_usage("Before scraping")
         raw_text = scrape_with_newspaper_or_fallback(article_url)
-        log_memory_usage("After scraping")
         if not raw_text:
-            return render_template("index.html", error="Failed to extract article from URL. Try pasting the article text directly or uploading a file.")
-
+            return render_template("index.html", error="Failed to extract article from URL.")
     elif uploaded_file and uploaded_file.filename != '':
         filename = uploaded_file.filename.lower()
         if filename.endswith('.txt'):
             raw_text = uploaded_file.read().decode('utf-8')
-
         elif filename.endswith('.pdf'):
             pdf = PyPDF2.PdfReader(uploaded_file)
-            pages_text = []
-            for page in pdf.pages:
-                pages_text.append(page.extract_text() or "")
-            raw_text = "\n\n".join(pages_text)
-
+            raw_text = "\n\n".join([p.extract_text() or "" for p in pdf.pages])
         elif filename.endswith('.docx'):
             docx_file = io.BytesIO(uploaded_file.read())
             doc = Document(docx_file)
-            paras = [para.text for para in doc.paragraphs if para.text.strip()]
-            raw_text = "\n\n".join(paras)
-
+            raw_text = "\n\n".join([para.text for para in doc.paragraphs if para.text.strip()])
         else:
-            return render_template("index.html", error="Unsupported file type. Only .txt, .pdf, and .docx are allowed.")
-
+            return render_template("index.html", error="Unsupported file type.")
     else:
-        return render_template("index.html", error="No input detected. Please paste text, enter a URL, or upload a file.")
-    
-    # Truncate long articles to reduce memory usage
+        return render_template("index.html", error="No input detected.")
+
+    # Truncate to avoid overloading memory
     words = raw_text.split()
-    MAX_WORDS = 2000
-    if len(words) > MAX_WORDS:
-        raw_text = " ".join(words[:MAX_WORDS]) 
+    if len(words) > 2000:
+        raw_text = " ".join(words[:2000])
 
-    log_memory_usage("Before summarization + bias detection")
+    # Create job ID and start background thread
+    job_id = str(uuid.uuid4())
+    Thread(target=process_article, args=(job_id, raw_text)).start()
 
-    # Run summarization, bias detection, and unbiasing in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
-        future_summary = executor.submit(summarize_article, raw_text)
-        future_bias = executor.submit(determine_bias, raw_text)
+    # Redirect user to a waiting page
+    return render_template("loading.html", task_id=job_id)
 
-        summary = future_summary.result()
-        bias = future_bias.result()
 
-        log_memory_usage("After summarization + bias detection")
+@app.route("/result/<job_id>")
+def result(job_id):
+    path = os.path.join(RESULTS_DIR, f"{job_id}.json")
+    if not os.path.exists(path):
+        return render_template("loading.html", message="Still processing, refresh in a few seconds.")
 
-        # Check for errors in summarization or bias detection
-        if "error" in summary:
-            return render_template("index.html", error=summary["error"])
-        if "error" in bias:
-            return render_template("index.html", error=bias["error"])
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
 
-        future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
-        future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
+    if "error" in data:
+        return render_template("index.html", error=data["error"])
 
-        misinfo_verdicts = future_misinfo.result()
-        unbiased_text = future_unbias.result()
+    return render_template('result.html', **data)
 
-        log_memory_usage("After misinformation + unbiasing")
-
-        if "error" in unbiased_text:
-            return render_template("index.html", error=unbiased_text["error"])
-
-    highlighted_text = apply_combined_highlights(
-        raw_text, bias["highlighted_passages"], misinfo_verdicts
-    )
-
-    score = bias["bias_score"]
-    rubric = bias["rubric_justification"]
-
-    log_memory_usage("Before rendering result")
-
-    return render_template('result.html',
-                           summary=summary,
-                           original_text=raw_text,
-                           highlighted_text=highlighted_text,
-                           unbiased_text=unbiased_text,
-                           score=score,
-                           rubric=rubric,)
+@app.route("/status/<job_id>")
+def check_status_update(job_id):
+    path = os.path.join(RESULTS_DIR, f"{job_id}.json")
+    if os.path.exists(path):
+        return jsonify({"done": True})
+    else:
+        return jsonify({"done": False})
 
 
 if __name__ == '__main__':

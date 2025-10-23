@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analyzing Article...</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      font-family: 'Inter', sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    .loader {
+      border: 6px solid #eee;
+      border-top: 6px solid #007bff;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .message {
+      text-align: center;
+      max-width: 400px;
+      font-size: 18px;
+      line-height: 1.4;
+    }
+    body.dark-mode {
+        background-color: #1a1a1a;
+        color: #f0f0f0;
+    }
+    .loader.dark-mode {
+        border-top: 6px solid #0d6efd; /* optional: brighter color for dark mode */
+    }
+  </style>
+</head>
+<body>
+  <div class="loader"></div>
+  <div class="message">
+    <p id="message-content">Your article is being analyzed. This may take a minute.</p>
+  </div>
+
+  <script>
+    // Get saved preference
+    const saved = localStorage.getItem("darkMode") === "true";
+
+    function setDarkMode(enabled) {
+        document.body.classList.toggle("dark-mode", enabled);
+    }
+
+    setDarkMode(saved); // Apply saved preference
+
+    const messages = [
+        "Analyzing article, please wait...",
+        "Identifying bias...",
+        "Scoring article...",
+        "Summarizing content...",
+        "Rewriting text in an unbiased form..."
+    ];
+
+    let currentIndex = 0;
+    const messageElement = document.getElementById("message-content");
+
+    function checkTask() {
+        fetch("/status/{{ task_id }}")
+            .then(res => res.json())
+            .then(data => {
+                if (data.done) {
+                    window.location.href = "/result/{{ task_id }}";
+                } else {
+                    currentIndex = (currentIndex + 1) % messages.length;
+                    messageElement.textContent = messages[currentIndex];
+                    setTimeout(checkTask, 5000); // check again in 5 seconds
+                }
+            });
+    }
+
+    checkTask();
+  </script>
+</body>
+</html>
