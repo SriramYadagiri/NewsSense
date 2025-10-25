@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analyzing Article...</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
     body {
       display: flex;
@@ -16,7 +15,9 @@
       font-family: 'Inter', sans-serif;
       background-color: #f9f9f9;
       color: #333;
+      transition: background-color 0.3s, color 0.3s;
     }
+
     .loader {
       border: 6px solid #eee;
       border-top: 6px solid #007bff;
@@ -24,68 +25,176 @@
       width: 60px;
       height: 60px;
       animation: spin 1s linear infinite;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
     }
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .progress-container {
+      width: 300px;
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #007bff;
+      border-radius: 10px;
+      transition: width 0.8s ease;
+    }
+
     .message {
       text-align: center;
-      max-width: 400px;
+      max-width: 420px;
       font-size: 18px;
       line-height: 1.4;
+      min-height: 40px;
+      position: relative;
     }
+
+    .cursor {
+      display: inline-block;
+      width: 3px;
+      background-color: #007bff;
+      margin-left: 3px;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      50.1%, 100% { opacity: 0; }
+    }
+
+    .fact {
+      margin-top: 50px;
+      font-size: 15px;
+      color: #555;
+      opacity: 0.8;
+      text-align: center;
+      transition: opacity 0.8s ease;
+    }
+
     body.dark-mode {
-        background-color: #1a1a1a;
-        color: #f0f0f0;
+      background-color: #1a1a1a;
+      color: #f0f0f0;
     }
-    .loader.dark-mode {
-        border-top: 6px solid #0d6efd; /* optional: brighter color for dark mode */
+    body.dark-mode .loader {
+      border: 6px solid #333;
+      border-top: 6px solid #0d6efd;
+    }
+    body.dark-mode .progress-container {
+      background: #333;
+    }
+    body.dark-mode .progress-bar {
+      background: #0d6efd;
+    }
+    body.dark-mode .cursor {
+      background-color: #0d6efd;
+    }
+    body.dark-mode .fact {
+      color: #aaa;
     }
   </style>
 </head>
 <body>
   <div class="loader"></div>
-  <div class="message">
-    <p id="message-content">Your article is being analyzed. This may take a minute.</p>
+  <div class="progress-container">
+    <div class="progress-bar" id="progress-bar"></div>
   </div>
+  <div class="message">
+    <span id="message-content"></span><span class="cursor"></span>
+  </div>
+  <div class="fact" id="fun-fact"></div>
 
   <script>
-    // Get saved preference
-    const saved = localStorage.getItem("darkMode") === "true";
+    const savedDark = localStorage.getItem("darkMode") === "true";
+    document.body.classList.toggle("dark-mode", savedDark);
 
-    function setDarkMode(enabled) {
-        document.body.classList.toggle("dark-mode", enabled);
-    }
-
-    setDarkMode(saved); // Apply saved preference
-
-    const messages = [
-        "Analyzing article, please wait...",
-        "Identifying bias...",
-        "Scoring article...",
-        "Summarizing content...",
-        "Rewriting text in an unbiased form..."
+    const steps = [
+      "Analyzing article, please wait...",
+      "Summarizing content...",
+      "Identifying bias...",
+      "Looking for misinformation...",
+      "Rewriting text in an unbiased form...",
+      "Analysis Complete"
     ];
 
-    let currentIndex = 0;
-    const messageElement = document.getElementById("message-content");
+    const funFacts = [
+      "Did you know? Most news articles use at least 5 biased words per 100 words.",
+      "Fun fact: Language bias is often more subtle than tone bias.",
+      "Tip: Neutral phrasing improves reader trust by 30%.",
+      "Insight: Framing can change how readers perceive the same facts.",
+      "Reminder: Balanced sourcing strengthens credibility."
+    ];
 
-    function checkTask() {
-        fetch("/status/{{ task_id }}")
-            .then(res => res.json())
-            .then(data => {
-                if (data.done) {
-                    window.location.href = "/result/{{ task_id }}";
-                } else {
-                    currentIndex = (currentIndex + 1) % messages.length;
-                    messageElement.textContent = messages[currentIndex];
-                    setTimeout(checkTask, 5000); // check again in 5 seconds
-                }
-            });
+    const messageElement = document.getElementById("message-content");
+    const progressBar = document.getElementById("progress-bar");
+    const factElement = document.getElementById("fun-fact");
+
+    let lastStep = "";
+    let typing = false;
+
+    function updateProgress(stepIndex) {
+      const progress = ((stepIndex + 1) / steps.length) * 100;
+      progressBar.style.width = `${progress}%`;
     }
 
+    function typeMessage(text, callback) {
+      typing = true;
+      messageElement.textContent = "";
+      let i = 0;
+      function type() {
+        if (i < text.length) {
+          messageElement.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, 40);
+        } else {
+          typing = false;
+          if (callback) callback();
+        }
+      }
+      type();
+    }
+
+    function updateMessage(newText) {
+      if (typing) return; // Prevent interruption
+      factElement.style.opacity = 0;
+      setTimeout(() => {
+        factElement.textContent = funFacts[Math.floor(Math.random() * funFacts.length)];
+        factElement.style.opacity = 1;
+      }, 400);
+      typeMessage(newText, () => {
+        if (lastStep !== messageElement.textContent) updateMessage(lastStep);
+      });
+    }
+
+    function checkTask() {
+      fetch("/status/{{ job_id }}")
+        .then(res => res.json())
+        .then(data => {
+          if (data.done) {
+            window.location.href = "/result/{{ job_id }}";
+          } else {
+            const stepIndex = steps.findIndex(s => s === data.current_step);
+            console.log(data.current_step, stepIndex);
+            if (data.current_step && data.current_step !== lastStep) {
+              updateProgress(stepIndex >= 0 ? stepIndex : 0);
+              updateMessage(data.current_step);
+              lastStep = data.current_step;
+            }
+            setTimeout(checkTask, 3000);
+          }
+        })
+        .catch(() => setTimeout(checkTask, 5000));
+    }
+
+    // Start
+    updateMessage("Your article is being analyzed. This may take a minute.");
     checkTask();
   </script>
 </body>

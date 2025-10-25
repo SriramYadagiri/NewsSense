@@ -20,6 +20,8 @@ from docx import Document
 
 import concurrent.futures
 
+task_status = {}
+
 # Define this at the top so you can reuse it easily
 def log_memory_usage(label=""):
     process = psutil.Process(os.getpid())
@@ -121,6 +123,8 @@ def scrape_with_newspaper_or_fallback(url):
         return ""
 
 def summarize_article(text):
+    global current_step
+    current_step = "Summarizing content..."
     text_file_path = 'prompts/summary_message.txt'
     with open(text_file_path, 'r') as file:
             initial_prompt = file.read()
@@ -148,6 +152,8 @@ def summarize_article(text):
         return {"error": "An error occurred while processing the request."}
 
 def determine_bias(text):
+    global current_step
+    current_step = "Identifying bias..."
     text_file_path = 'prompts/bias_message.txt'
     with open(text_file_path, 'r') as file:
             initial_prompt = file.read()
@@ -229,6 +235,8 @@ def apply_combined_highlights(text, bias_passages, misinfo_claims):
     return text
 
 def unbias(text, highlighted_passages):
+    global current_step
+    current_step = "Rewriting text in an unbiased form..."
     text_file_path = 'prompts/unbias_message.txt'
     with open(text_file_path, 'r') as file:
         initial_prompt = file.read()
@@ -265,21 +273,34 @@ RESULTS_DIR = "results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 def process_article(job_id, raw_text):
-    """Runs the full analysis pipeline in a background thread."""
+    """Runs the full analysis pipeline in a background thread with progress tracking."""
     try:
-        # Parallel execution still fine inside thread
+        # Initialize progress
+        task_status[job_id] = {"done": False, "current_step": "Analyzing article..."}
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
+            # --- Step 1: Summarize and detect bias ---
+            task_status[job_id]["current_step"] = "Summarizing content..."
             future_summary = executor.submit(summarize_article, raw_text)
+
+            task_status[job_id]["current_step"] = "Identifying bias..."
             future_bias = executor.submit(determine_bias, raw_text)
+
             summary = future_summary.result()
             bias = future_bias.result()
 
+            # --- Step 2: Parallel misinformation + unbias ---
+            task_status[job_id]["current_step"] = "Looking for misinformation..."
             future_misinfo = executor.submit(verify_claims_with_agent, raw_text)
+
+            task_status[job_id]["current_step"] = "Rewriting text in an unbiased form..."
             future_unbias = executor.submit(unbias, raw_text, bias["highlighted_passages"])
 
             misinfo_verdicts = future_misinfo.result()
             unbiased_text = future_unbias.result()
 
+        # --- Step 3: Combine results ---
+        task_status[job_id]["current_step"] = "Combining analysis results..."
         highlighted_text = apply_combined_highlights(
             raw_text, bias["highlighted_passages"], misinfo_verdicts
         )
@@ -295,10 +316,14 @@ def process_article(job_id, raw_text):
 
     except Exception as e:
         result = {"error": str(e)}
+        task_status[job_id]["current_step"] = f"Error: {e}"
 
-    # Save results to file
+    # --- Step 4: Save result and mark done ---
     with open(os.path.join(RESULTS_DIR, f"{job_id}.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
+
+    task_status[job_id]["done"] = True
+    task_status[job_id]["current_step"] = "Analysis complete."
 
 
 @app.route("/analyze", methods=["POST"])
@@ -307,6 +332,9 @@ def analyze():
     article_url = request.form.get('article_url', '').strip()
     uploaded_file = request.files.get('article_file')
     raw_text = ""
+    job_id = str(uuid.uuid4())
+
+    task_status[job_id] = {"done": False, "current_step": "Analyzing article..."}
 
     # Handle input sources (same as before)
     if pasted_text:
@@ -337,18 +365,17 @@ def analyze():
         raw_text = " ".join(words[:2000])
 
     # Create job ID and start background thread
-    job_id = str(uuid.uuid4())
     Thread(target=process_article, args=(job_id, raw_text)).start()
 
     # Redirect user to a waiting page
-    return render_template("loading.html", task_id=job_id)
+    return render_template("loading.html", job_id=job_id)
 
 
 @app.route("/result/<job_id>")
 def result(job_id):
     path = os.path.join(RESULTS_DIR, f"{job_id}.json")
     if not os.path.exists(path):
-        return render_template("loading.html", message="Still processing, refresh in a few seconds.")
+        return render_template("loading.html", job_id=job_id)
 
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -362,9 +389,9 @@ def result(job_id):
 def check_status_update(job_id):
     path = os.path.join(RESULTS_DIR, f"{job_id}.json")
     if os.path.exists(path):
-        return jsonify({"done": True})
+        return jsonify({"done": True, "step": "Analysis Complete"})
     else:
-        return jsonify({"done": False})
+        return jsonify(task_status[job_id])
 
 
 if __name__ == '__main__':
