@@ -410,6 +410,16 @@ div {
     background-color: #ffcc00;
 }
 
+/* Only show tooltip for .bias if it does NOT contain a .misinfo child */
+.highlight.bias:not(:has(.highlight.misinfo))::after {
+    content: attr(data-reason);
+}
+
+/* Disable tooltip for .bias that has a .misinfo child */
+.highlight.bias:has(.highlight.misinfo)::after {
+    content: none; /* removes tooltip */
+}
+
 .highlight::after {
     content: attr(data-reason);
     position: absolute;

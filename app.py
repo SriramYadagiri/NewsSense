@@ -205,7 +205,8 @@ def apply_combined_highlights(text, bias_passages, misinfo_claims):
                 "type": "misinfo",
                 "passage": claim,
                 "verdict": m["verdict"].strip(),
-                "reason": f"{m['verdict']}: {m['justification']}"
+                "reason": f"{m['verdict']}: {m['justification']}",
+                "source": m.get("source", "").strip()
             })
 
     # Avoid overlapping inserts: sort by first occurrence index
@@ -227,8 +228,11 @@ def apply_combined_highlights(text, bias_passages, misinfo_claims):
         if span["type"] == "bias":
             tag = f'<span class="highlight bias" data-reason="{reason}">{escaped_passage}</span>'
         else:
-            tag = f'<span class="highlight misinfo {span["verdict"].lower()}" data-reason="{reason}">{escaped_passage}</span>'
-
+            src = span.get("source", "")
+            if ("http" in src):
+                tag = f'<span class="highlight misinfo {span["verdict"].lower()}" data-reason="{reason}"><a href="{span["source"]}" target="_blank">{escaped_passage}</a></span>'
+            else:
+                tag = f'<span class="highlight misinfo {span["verdict"].lower()}" data-reason="{reason}">{escaped_passage}</span>'
         text = text.replace(passage, tag, 1)
         modified.add(passage)
 
